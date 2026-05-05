@@ -3,33 +3,64 @@
 <head>
   <title>VerifyPlug</title>
   <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
-  <h1>VerifyPlug 🔍</h1>
+  <p id="userInfo"></p>
+  <div class="container">
 
-  <input type="text" id="searchInput" placeholder="Enter phone number">
-  <button onclick="searchVendor()">Search</button>
+  <div class="header">
+    <h1>VerifyPlug 🔍</h1>
+    <p class="sub">Check vendors before sending money</p>
+  </div>
 
-  <div id="result"></div>
+  <!-- SEARCH -->
+  <div class="card">
+    <div class="label">Search Vendor</div>
 
-  <hr>
+    <div class="stack">
+      <input id="searchInput" placeholder="Enter phone number">
+      <button onclick="searchVendor()">Search</button>
+    </div>
 
-  <h2>Add Vendor</h2>
-  <input type="text" id="name" placeholder="Vendor Name">
-  <input type="text" id="phone" placeholder="Phone Number">
-  <button onclick="addVendor()">Submit</button>
+    <div id="result"></div>
+  </div>
 
-  <hr>
+  <!-- ADD VENDOR -->
+  <div class="card">
+    <div class="label">Add Vendor</div>
 
-  <h2>Add Review</h2>
-  <input type="text" id="reviewPhone" placeholder="Vendor Phone">
-  <input type="number" id="rating" placeholder="Rating (1-5)">
-  <input type="text" id="comment" placeholder="Comment">
-  <button onclick="addReview()">Submit Review</button>
-  <h2>Report Scam</h2>
-<input type="text" id="scamPhone" placeholder="Vendor Phone">
-<input type="text" id="scamReason" placeholder="What happened?">
-<button onclick="reportScam()">Report</button>
+    <div class="stack">
+      <input id="name" placeholder="Vendor Name">
+      <input id="phone" placeholder="Phone Number">
+      <button onclick="addVendor()">Submit</button>
+    </div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="card">
+    <div class="label">Add Review</div>
+
+    <div class="stack">
+      <input id="reviewPhone" placeholder="Vendor Phone">
+      <input id="rating" placeholder="Rating (1-5)">
+      <input id="comment" placeholder="Comment">
+      <button onclick="addReview()">Send Review</button>
+    </div>
+  </div>
+
+  <!-- SCAM -->
+  <div class="card">
+    <div class="label">Report Scam</div>
+
+    <div class="stack">
+      <input id="scamPhone" placeholder="Vendor Phone">
+      <input id="scamReason" placeholder="Reason">
+      <button onclick="reportScam()">Report</button>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>

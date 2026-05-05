@@ -25,25 +25,32 @@ const db = getFirestore(app);
 
 // ADD vendor
 window.addVendor = async function () {
-  let name = document.getElementById("name").value;
-  let phone = document.getElementById("phone").value;
+  const user = auth.currentUser;
+
+  if (!user) {
+    alert("You must be logged in");
+    return;
+  }
+
+  let name = document.getElementById("vendorName").value;
+  let phone = document.getElementById("vendorPhone").value;
+  let location = document.getElementById("vendorLocation").value;
+
+  if (!name || !phone) {
+    alert("Fill required fields");
+    return;
+  }
 
   await addDoc(collection(db, "vendors"), {
-    name: name,
-    phone: phone
+    name,
+    phone,
+    location,
+    createdBy: user.email,
+    createdAt: new Date()
   });
 
-  alert("Saved to database!");
+  alert("Business added successfully!");
 };
-import {
-  doc,
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  where
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
 // ADD REVIEW
 window.addReview = async function () {
   let phone = document.getElementById("reviewPhone").value;
@@ -148,3 +155,113 @@ window.reportScam = async function () {
 
   alert("Scam reported!");
 };
+// Get scam reports
+const scamSnapshot = await getDocs(
+  collection(db, "vendors", vendorDoc.id, "scams")
+);
+
+let scamCount = scamSnapshot.size;
+<p>🚨 Scam Reports: ${scamCount}</p>
+let avg = reviewsSnapshot.size
+  ? total / reviewsSnapshot.size
+  : 0;
+
+let trustScore = (avg * 20) - (scamCount * 10);
+
+if (trustScore < 0) trustScore = 0;
+
+trustScore = trustScore.toFixed(0);
+
+<p>Trust Score: ${trustScore}/100</p>
+
+if (!name || !phone) {
+  alert("Fill all fields");
+  return;
+}
+onAuthStateChanged(auth, (user) => {
+
+  // If user is logged in
+  if (user) {
+
+    // show UI
+    const container = document.querySelector(".container");
+    if (container) container.style.display = "block";
+
+    // show user email
+    const userInfo = document.getElementById("userInfo");
+    if (userInfo) {
+      userInfo.innerText = "Logged in as: " + user.email;
+    }
+
+  } else {
+
+    // hide UI
+    const container = document.querySelector(".container");
+    if (container) container.style.display = "none";
+  }
+});
+window.goCustomer = function () {
+  window.location.href = "customer.html";
+};
+
+window.goVendor = function () {
+  window.location.href = "vendor.html";
+};window.loadAdminData = async function () {
+
+  const vendorList = document.getElementById("vendorList");
+  const scamList = document.getElementById("scamList");
+
+  vendorList.innerHTML = "";
+  scamList.innerHTML = "";
+
+  // GET VENDORS
+  const vendorsSnap = await getDocs(collection(db, "vendors"));
+
+  vendorsSnap.forEach((docItem) => {
+    const v = docItem.data();
+
+    vendorList.innerHTML += `
+      <div style="padding:10px; background:#1f2937; margin-bottom:8px; border-radius:8px;">
+        <b>${v.name}</b><br/>
+        ${v.phone}<br/>
+        <button onclick="deleteVendor('${docItem.id}')">Delete</button>
+      </div>
+    `;
+  });
+
+  // GET SCAMS (ALL SUBCOLLECTIONS - SIMPLE VERSION)
+  const vendors = await getDocs(collection(db, "vendors"));
+
+  vendors.forEach(async (vDoc) => {
+    const scamSnap = await getDocs(collection(db, "vendors", vDoc.id, "scams"));
+
+    scamSnap.forEach((s) => {
+      const data = s.data();
+
+      scamList.innerHTML += `
+        <div style="padding:10px; background:#1f2937; margin-bottom:8px; border-radius:8px;">
+          <b>Vendor ID:</b> ${vDoc.id}<br/>
+          Reason: ${data.reason}
+        </div>
+      `;
+    });
+  });
+
+};window.deleteVendor = async function (id) {
+  await deleteDoc(doc(db, "vendors", id));
+  alert("Vendor deleted");
+  loadAdminData();
+};if (window.location.pathname.includes("admin.html")) {
+  loadAdminData();
+}onAuthStateChanged(auth, (user) => {
+
+  if (window.location.pathname.includes("admin.html")) {
+
+    if (!user || user.email !== "ademikun2023@gmail.com") {
+      alert("Access denied");
+      window.location.href = "index.html";
+    }
+
+  }
+
+});

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VerifyPlug - Vendor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>Vendor Dashboard 🧑‍💼</h1>
+      <p class="sub">List your business on VerifyPlug</p>
+    </div>
+
+    <!-- VENDOR FORM -->
+    <div class="card">
+      <div class="label">Add Your Business</div>
+
+      <div class="stack">
+
+        <input id="vendorName" placeholder="Business Name">
+        <input id="vendorPhone" placeholder="Phone Number">
+        <input id="vendorLocation" placeholder="Location (optional)">
+
+        <button onclick="addVendor()">Submit Business</button>
+
+      </div>
+
+      <p style="font-size:12px; opacity:0.6; margin-top:10px;">
+        Your business will be visible to customers after submission.
+      </p>
+
+    </div>
+
+    <!-- LOGIN INFO (optional display) -->
+    <div class="card">
+      <div class="label">Account</div>
+      <p id="vendorUser">Not logged in</p>
+    </div>
+
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
