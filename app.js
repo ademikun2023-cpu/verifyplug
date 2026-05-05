@@ -363,3 +363,159 @@ async function getTrustScore(vendorId) {
 addDoc(collection(db, "vendors", vendorId, "scams"), {
   reason: "scam report"
 });
+window.verifyVendor = async function (vendorId) {
+
+  try {
+    await updateDoc(doc(db, "vendors", vendorId), {
+      verified: true
+    });
+
+    alert("Payment successful! Vendor is now verified.");
+
+  } catch (error) {
+    console.error(error);
+  }
+if (data.verified) {
+  score += 25;
+}
+};
+snap.forEach((docItem) => {
+
+  let data = docItem.data();
+  let id = docItem.id;
+
+  document.getElementById("result").innerHTML += `
+    <div class="card">
+      <b>${data.name}</b><br/>
+      ${data.phone}<br/>
+
+      <div>
+        ${data.verified ? "🟢 Verified" : "⚪ Not Verified"}
+      </div>
+
+      <button onclick="verifyVendor('${id}')">
+        Pay to Verify
+      </button>
+
+    </div>
+  `;
+});
+window.requestVerification = async function (vendorId) {
+
+  await updateDoc(doc(db, "vendors", vendorId), {
+    verificationRequest: true
+  });
+
+  alert("Request sent to admin for approval");
+};
+async function loadRequests() {
+
+  const snap = await getDocs(collection(db, "vendors"));
+
+  document.getElementById("requestList").innerHTML = "";
+
+  snap.forEach((docItem) => {
+
+    let data = docItem.data();
+
+    if (data.verificationRequest && !data.verified) {
+
+      document.getElementById("requestList").innerHTML += `
+        <div class="card">
+          <b>${data.name}</b><br/>
+          ${data.phone}<br/>
+
+          <button onclick="approveVendor('${docItem.id}')">
+            Approve
+          </button>
+
+          <button onclick="rejectVendor('${docItem.id}')">
+            Reject
+          </button>
+
+        </div>
+      `;
+    }
+  });
+}
+window.approveVendor = async function (vendorId) {
+
+  await updateDoc(doc(db, "vendors", vendorId), {
+    verified: true,
+    verificationRequest: false
+  });
+
+  alert("Vendor approved");
+  loadRequests();
+};
+window.rejectVendor = async function (vendorId) {
+
+  await updateDoc(doc(db, "vendors", vendorId), {
+    verificationRequest: false
+  });
+
+  alert("Request rejected");
+  loadRequests();
+};
+if (window.location.pathname.includes("admin.html")) {
+  loadRequests();
+}
+window.payForVerification = function (vendorId, email) {
+
+  let handler = PaystackPop.setup({
+    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9", // replace this
+    email: email,
+    amount: 2000 * 100, // ₦2000 (kobo)
+    currency: "NGN",
+
+    callback: async function (response) {
+
+      alert("Payment successful!");
+
+      // AFTER PAYMENT → send request to admin
+      await updateDoc(doc(db, "vendors", vendorId), {
+        verificationRequest: true,
+        paymentRef: response.reference
+      });
+
+    },
+
+    onClose: function () {
+      alert("Payment cancelled");
+    }
+  });
+
+  handler.openIframe();
+};
+window.payForVerification = function (vendorId, email) {
+
+  let handler = PaystackPop.setup({
+    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9", // your real test key
+    email: email,
+    amount: 10000 * 100, // ₦10000
+    currency: "NGN",
+
+    callback: async function (response) {
+
+      alert("Payment successful ✔");
+
+      // ✅ AUTO APPROVE HERE
+      await updateDoc(doc(db, "vendors", vendorId), {
+        verified: true,
+        verificationRequest: true,
+        paymentRef: response.reference
+      });
+
+      alert("Vendor is now VERIFIED 🟢");
+
+      // optional: refresh UI
+      location.reload();
+    },
+
+    onClose: function () {
+      alert("Payment cancelled");
+    }
+  });
+
+  handler.openIframe();
+};

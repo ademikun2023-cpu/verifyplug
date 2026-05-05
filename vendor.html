@@ -4,6 +4,7 @@
   <title>VerifyPlug - Vendor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 
 <body>
@@ -24,7 +25,9 @@
       <input id="vendorLocation" placeholder="Location">
       <button onclick="addVendor()">Submit</button>
     </div>
-
+<button onclick="payForVerification('${id}', '${data.email}')">
+  Pay ₦10,000 to Verify
+</button>
   </div>
 
 </div>
