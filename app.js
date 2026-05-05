@@ -519,3 +519,70 @@ window.payForVerification = function (vendorId, email) {
 
   handler.openIframe();
 };
+window.signup = async function () {
+
+  let email = document.getElementById("email").value;
+  let password = document.getElementById("password").value;
+  let role = document.getElementById("role").value;
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+
+    const user = auth.currentUser;
+
+    await setDoc(doc(db, "users", user.uid), {
+      email: user.email,
+      role: role
+    });
+
+    alert("Signup successful ✔");
+
+    if (role === "vendor") {
+      window.location.href = "vendor.html";
+    } else {
+      window.location.href = "customer.html";
+    }
+
+  } catch (error) {
+    alert(error.message);
+  }
+};
+window.login = async function () {
+
+  let email = document.getElementById("email").value;
+  let password = document.getElementById("password").value;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+
+    const user = auth.currentUser;
+
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+
+    if (userDoc.exists()) {
+      const role = userDoc.data().role;
+
+      alert("Login successful ✔");
+
+      if (role === "vendor") {
+        window.location.href = "vendor.html";
+      } else {
+        window.location.href = "customer.html";
+      }
+    }
+
+  } catch (error) {
+    alert(error.message);
+  }
+};
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "firebase/auth";
+
+import {
+  doc,
+  setDoc,
+  getDoc
+} from "firebase/firestore";
