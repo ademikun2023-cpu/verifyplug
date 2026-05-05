@@ -233,3 +233,10 @@ onAuthStateChanged(auth, (user) => {
     if (container) container.style.display = "none";
   }
 });
+window.goCustomer = function () {
+  window.location.href = "customer.html";
+};
+
+window.goVendor = function () {
+  window.location.href = "vendor.html";
+};
