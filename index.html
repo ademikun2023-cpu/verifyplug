@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VerifyPlug</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>VerifyPlug 🔍</h1>
+
+  <input type="text" id="searchInput" placeholder="Enter phone number">
+  <button onclick="searchVendor()">Search</button>
+
+  <div id="result"></div>
+
+  <hr>
+
+  <h2>Add Vendor</h2>
+  <input type="text" id="name" placeholder="Vendor Name">
+  <input type="text" id="phone" placeholder="Phone Number">
+  <button onclick="addVendor()">Submit</button>
+
+  <hr>
+
+  <h2>Add Review</h2>
+  <input type="text" id="reviewPhone" placeholder="Vendor Phone">
+  <input type="number" id="rating" placeholder="Rating (1-5)">
+  <input type="text" id="comment" placeholder="Comment">
+  <button onclick="addReview()">Submit Review</button>
+  <h2>Report Scam</h2>
+<input type="text" id="scamPhone" placeholder="Vendor Phone">
+<input type="text" id="scamReason" placeholder="What happened?">
+<button onclick="reportScam()">Report</button>
+</body>
+</html>
