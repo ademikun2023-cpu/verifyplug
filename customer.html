@@ -6,51 +6,45 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body><div class="container">
 
-  <div class="container">
-
-    <div class="header">
-      <h1>VerifyPlug 🔍</h1>
-      <p class="sub">Check if vendors are trusted before paying</p>
-    </div>
-
-    <!-- SEARCH VENDOR -->
-    <div class="card">
-      <div class="label">Search Vendor</div>
-
-      <div class="stack">
-        <input id="searchInput" placeholder="Enter phone number">
-        <button onclick="searchVendor()">Search</button>
-      </div>
-
-      <div id="result"></div>
-    </div>
-
-    <!-- ADD REVIEW -->
-    <div class="card">
-      <div class="label">Add Review</div>
-
-      <div class="stack">
-        <input id="reviewPhone" placeholder="Vendor Phone">
-        <input id="rating" placeholder="Rating (1-5)">
-        <input id="comment" placeholder="Comment">
-        <button onclick="addReview()">Send Review</button>
-      </div>
-    </div>
-
-    <!-- REPORT SCAM -->
-    <div class="card">
-      <div class="label">Report Scam</div>
-
-      <div class="stack">
-        <input id="scamPhone" placeholder="Vendor Phone">
-        <input id="scamReason" placeholder="Reason">
-        <button onclick="reportScam()">Report</button>
-      </div>
-    </div>
-
+  <div class="header">
+    <h1>Customer Dashboard 🔍</h1>
+    <p class="sub">Search and verify vendors</p>
   </div>
+
+  <div class="card">
+    <div class="label">Search Vendor</div>
+
+    <div class="stack">
+      <input id="searchInput" placeholder="Phone number">
+      <button onclick="searchVendor()">Search</button>
+    </div>
+<div style="margin-top:10px;">
+  <div style="font-size:12px; opacity:0.7;">Trust Score</div>
+
+  <div style="height:10px; background:#1f2937; border-radius:20px; overflow:hidden; margin-top:6px;">
+    <div style="width:70%; height:100%; background:linear-gradient(90deg,#22c55e,#16a34a);"></div>
+  </div>
+
+  <div style="font-size:12px; margin-top:6px; opacity:0.7;">
+    70% Trusted
+  </div>
+</div>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Report Scam</div>
+
+    <div class="stack">
+      <input id="scamPhone" placeholder="Phone">
+      <input id="scamReason" placeholder="Reason">
+      <button onclick="reportScam()">Report</button>
+    </div>
+  </div>
+
+</div>
 
   <script type="module" src="app.js"></script>
 </body>

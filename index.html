@@ -7,47 +7,39 @@
 </head>
 
 <body>
+ <div class="topbar">
+  <div><b>VerifyPlug</b></div>
+  <div>
+    <button class="navbtn" onclick="goCustomer()">Customer</button>
+    <button class="navbtn" onclick="goVendor()">Vendor</button>
+  </div>
+</div>
 
-  <div class="container">
+<div class="container">
 
-    <div class="header">
-      <h1>VerifyPlug 🔍</h1>
-      <p class="sub">Check vendors before sending money</p>
-    </div>
+  <div class="header">
+    <h1>Verify Before You Pay 🔍</h1>
+    <p class="sub">Avoid scams. Verify vendors instantly.</p>
+  </div>
 
-    <!-- ROLE SELECT -->
-    <div class="card">
+  <div class="card">
+    <div class="label">Account</div>
 
-      <div class="label">Choose Account Type</div>
+    <div class="stack">
+      <input id="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Password">
 
       <select id="role">
         <option value="customer">Customer</option>
         <option value="vendor">Vendor</option>
       </select>
 
+      <button onclick="signup()">Sign Up</button>
+      <button onclick="login()">Login</button>
     </div>
-
-    <!-- AUTH BOX -->
-    <div class="card">
-
-      <div class="label">Login / Signup</div>
-
-      <div class="stack">
-
-        <input id="email" placeholder="Email">
-        <input id="password" type="password" placeholder="Password">
-
-        <div class="row">
-          <button onclick="signup()">Sign Up</button>
-          <button onclick="login()">Login</button>
-        </div>
-
-      </div>
-
-    </div>
-
   </div>
 
+</div>
   <script type="module" src="app.js"></script>
 </body>
 </html>

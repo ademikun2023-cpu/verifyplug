@@ -83,23 +83,36 @@ window.addReview = async function () {
 };
 // SEARCH vendor
 window.searchVendor = async function () {
-  let input = document.getElementById("searchInput").value;
 
-  const q = query(
-    collection(db, "vendors"),
-    where("phone", "==", input)
-  );
+  let phone = document.getElementById("searchInput").value;
 
-  const snapshot = await getDocs(q);
+  const q = query(collection(db, "vendors"), where("phone", "==", phone));
+  const snap = await getDocs(q);
 
-  if (snapshot.empty) {
-    document.getElementById("result").innerHTML = "No vendor found";
-    return;
-  }
+  document.getElementById("result").innerHTML = "";
 
-  const vendorDoc = snapshot.docs[0];
-  const data = vendorDoc.data();
+  snap.forEach(async (docItem) => {
 
+    let data = docItem.data();
+
+    let score = await getTrustScore(docItem.id);
+
+    let verified = score >= 70 ? "🟢 Verified" : "🔴 Not Verified";
+
+    document.getElementById("result").innerHTML = `
+      <div style="padding:12px;">
+        <b>${data.name}</b><br/>
+        ${data.phone}<br/><br/>
+
+        ${renderTrust(score)}<br/>
+
+        <div style="font-size:12px;">
+          ${verified}
+        </div>
+      </div>
+    `;
+  });
+};
   // Get reviews
   const reviewsSnapshot = await getDocs(
     collection(db, "vendors", vendorDoc.id, "reviews")
@@ -126,7 +139,6 @@ window.searchVendor = async function () {
     <h4>Reviews:</h4>
     ${reviewsHTML || "No reviews yet"}
   `;
-};
 window.reportScam = async function () {
   let phone = document.getElementById("scamPhone").value;
   let reason = document.getElementById("scamReason").value;
@@ -305,3 +317,49 @@ function routeUser(role) {
     window.location.href = "customer.html";
   }
 }
+/* 🔍 SEARCH FUNCTION */
+function searchVendor() {
+  // your existing logic here
+}
+
+/* 📊 TRUST SCORE FUNCTION 👇 PUT HERE */
+function renderTrust(score) {
+  return `
+    <div style="margin-top:10px;">
+      <div style="font-size:12px; opacity:0.7;">Trust Score</div>
+
+      <div style="height:10px; background:#1f2937; border-radius:20px; overflow:hidden; margin-top:6px;">
+        <div style="width:${score}%; height:100%; background:linear-gradient(90deg,#22c55e,#16a34a);"></div>
+      </div>
+
+      <div style="font-size:12px; margin-top:6px; opacity:0.7;">
+        ${score}% Trusted
+      </div>
+    </div>
+  `;
+}
+document.getElementById("result").innerHTML = `
+  <div><b>Vendor Found</b></div>
+  <div>Phone: 080xxxxxxx</div>
+  ${renderTrust(72)}
+`;
+async function getTrustScore(vendorId) {
+
+  const scamsRef = collection(db, "vendors", vendorId, "scams");
+  const scamSnap = await getDocs(scamsRef);
+
+  let scamCount = scamSnap.size;
+
+  // Base score
+  let score = 100;
+
+  // Each scam reduces score
+  score -= scamCount * 15;
+
+  if (score < 0) score = 0;
+
+  return score;
+}
+addDoc(collection(db, "vendors", vendorId, "scams"), {
+  reason: "scam report"
+});

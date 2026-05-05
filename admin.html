@@ -7,28 +7,27 @@
 </head>
 
 <body>
+<div class="container">
 
-  <div class="container">
+  <div class="header">
+    <h1>Vendor Dashboard 🧑‍💼</h1>
+    <p class="sub">List your business</p>
+  </div>
 
-    <div class="header">
-      <h1>Admin Dashboard 🧑‍💼</h1>
-      <p class="sub">Manage vendors and reports</p>
-    </div>
+  <div class="card">
 
-    <!-- VENDORS -->
-    <div class="card">
-      <div class="label">All Vendors</div>
-      <div id="vendorList"></div>
-    </div>
+    <div class="label">Add Business</div>
 
-    <!-- SCAMS -->
-    <div class="card">
-      <div class="label">Scam Reports</div>
-      <div id="scamList"></div>
+    <div class="stack">
+      <input id="vendorName" placeholder="Business name">
+      <input id="vendorPhone" placeholder="Phone">
+      <input id="vendorLocation" placeholder="Location">
+      <button onclick="addVendor()">Submit</button>
     </div>
 
   </div>
 
+</div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
