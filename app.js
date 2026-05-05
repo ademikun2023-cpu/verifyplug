@@ -1,8 +1,7 @@
 // ==========================
-// 1. FIREBASE IMPORTS
+// Firebase Imports
 // ==========================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-
 import {
   getFirestore,
   collection,
@@ -11,9 +10,10 @@ import {
   query,
   where,
   doc,
-  updateDoc,
   setDoc,
-  getDoc
+  getDoc,
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import {
@@ -23,9 +23,10 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+import { PaystackPop } from "https://js.paystack.co/v1/inline.js";
 
 // ==========================
-// 2. FIREBASE CONFIG
+// Firebase Config
 // ==========================
 const firebaseConfig = {
   apiKey: "AIzaSyAFkCQI646z0NTyKZB1ZL7D5EYZuxGTSlY",
@@ -36,74 +37,91 @@ const firebaseConfig = {
   appId: "1:244761045495:web:4c2f0091a7a46a7272e6f2"
 };
 
+// ==========================
+// Init
+// ==========================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// ==========================
+// ROUTING (GLOBAL)
+// ==========================
+window.goCustomer = function () {
+  window.location.href = "customer.html";
+};
+
+window.goVendor = function () {
+  window.location.href = "vendor.html";
+};
 
 // ==========================
-// 3. AUTH SYSTEM
+// AUTH SYSTEM
 // ==========================
 window.signup = async function () {
   let email = document.getElementById("email").value;
   let password = document.getElementById("password").value;
   let role = document.getElementById("role").value;
 
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
+  const userCred = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCred.user;
 
-    const user = auth.currentUser;
+  await setDoc(doc(db, "users", user.uid), {
+    email,
+    role
+  });
 
-    await setDoc(doc(db, "users", user.uid), {
-      email: user.email,
-      role: role
-    });
-
-    alert("Signup successful");
-
-    window.location.href =
-      role === "vendor" ? "vendor.html" : "customer.html";
-
-  } catch (e) {
-    alert(e.message);
-  }
+  routeUser(role);
 };
-
 
 window.login = async function () {
   let email = document.getElementById("email").value;
   let password = document.getElementById("password").value;
 
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
+  const userCred = await signInWithEmailAndPassword(auth, email, password);
+  const user = userCred.user;
 
-    const user = auth.currentUser;
-    const userDoc = await getDoc(doc(db, "users", user.uid));
+  const userDoc = await getDoc(doc(db, "users", user.uid));
 
-    const role = userDoc.data().role;
-
-    alert("Login successful");
-
-    window.location.href =
-      role === "vendor" ? "vendor.html" : "customer.html";
-
-  } catch (e) {
-    alert(e.message);
+  if (userDoc.exists()) {
+    routeUser(userDoc.data().role);
   }
 };
 
+function routeUser(role) {
+  if (role === "vendor") {
+    window.location.href = "vendor.html";
+  } else {
+    window.location.href = "customer.html";
+  }
+}
 
 // ==========================
-// 4. ADD VENDOR
+// AUTH UI STATE
+// ==========================
+onAuthStateChanged(auth, (user) => {
+  const container = document.querySelector(".container");
+
+  if (!container) return;
+
+  if (user) {
+    container.style.display = "block";
+  } else {
+    container.style.display = "none";
+  }
+});
+
+// ==========================
+// VENDOR ADD
 // ==========================
 window.addVendor = async function () {
-
   const user = auth.currentUser;
-  if (!user) return alert("Login first");
 
-  let name = document.getElementById("vendorName").value;
-  let phone = document.getElementById("vendorPhone").value;
-  let location = document.getElementById("vendorLocation").value;
+  if (!user) return alert("Login required");
+
+  const name = document.getElementById("vendorName").value;
+  const phone = document.getElementById("vendorPhone").value;
+  const location = document.getElementById("vendorLocation").value;
 
   await addDoc(collection(db, "vendors"), {
     name,
@@ -114,100 +132,98 @@ window.addVendor = async function () {
     createdAt: new Date()
   });
 
-  alert("Vendor added");
+  alert("Vendor added!");
 };
 
-
 // ==========================
-// 5. TRUST SCORE
+// TRUST SCORE
 // ==========================
 async function getTrustScore(vendorId) {
+  const scamsSnap = await getDocs(collection(db, "vendors", vendorId, "scams"));
 
-  const scamsRef = collection(db, "vendors", vendorId, "scams");
-  const scamSnap = await getDocs(scamsRef);
-
-  let score = 100 - (scamSnap.size * 15);
+  let score = 100 - scamsSnap.size * 15;
 
   if (score < 0) score = 0;
 
   return score;
 }
 
-
-// ==========================
-// 6. TRUST UI
-// ==========================
 function renderTrust(score) {
   return `
-    <div style="margin-top:10px;">
-      <div style="height:10px;background:#111;border-radius:20px;">
-        <div style="width:${score}%;height:100%;
-        background:linear-gradient(90deg,green,lime);"></div>
+    <div>
+      <div style="background:#222;height:10px;border-radius:10px;">
+        <div style="width:${score}%;height:10px;background:green;border-radius:10px;"></div>
       </div>
       <small>${score}% Trust</small>
     </div>
   `;
 }
 
-
 // ==========================
-// 7. SEARCH VENDOR
+// SEARCH
 // ==========================
 window.searchVendor = async function () {
-
-  let phone = document.getElementById("searchInput").value;
+  const phone = document.getElementById("searchInput").value;
 
   const q = query(collection(db, "vendors"), where("phone", "==", phone));
   const snap = await getDocs(q);
 
-  document.getElementById("result").innerHTML = "";
+  let resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
 
   snap.forEach(async (docItem) => {
+    const data = docItem.data();
+    const score = await getTrustScore(docItem.id);
 
-    let data = docItem.data();
-    let id = docItem.id;
-
-    let score = await getTrustScore(id);
-    let verified = score >= 70 ? "🟢 Verified" : "🔴 Not Verified";
-
-    document.getElementById("result").innerHTML = `
+    resultDiv.innerHTML += `
       <div>
-        <b>${data.name}</b><br/>
-        ${data.phone}<br/>
-
+        <h3>${data.name}</h3>
+        <p>${data.phone}</p>
         ${renderTrust(score)}
-
-        <div>${verified}</div>
-
-        <button onclick="payForVerification('${id}', '${data.createdBy}')">
-          Verify Vendor (₦10,000)
-        </button>
       </div>
     `;
   });
 };
 
+// ==========================
+// REPORT SCAM
+// ==========================
+window.reportScam = async function () {
+  const phone = document.getElementById("scamPhone").value;
+  const reason = document.getElementById("scamReason").value;
+
+  const q = query(collection(db, "vendors"), where("phone", "==", phone));
+  const snap = await getDocs(q);
+
+  if (snap.empty) return alert("Vendor not found");
+
+  const vendor = snap.docs[0];
+
+  await addDoc(collection(db, "vendors", vendor.id, "scams"), {
+    reason,
+    date: new Date()
+  });
+
+  alert("Reported!");
+};
 
 // ==========================
-// 8. PAYSTACK PAYMENT
+// PAYSTACK (VERIFICATION)
 // ==========================
 window.payForVerification = function (vendorId, email) {
-
   let handler = PaystackPop.setup({
     key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
-    email: email,
+    email,
     amount: 10000 * 100,
     currency: "NGN",
 
     callback: async function (response) {
-
       await updateDoc(doc(db, "vendors", vendorId), {
         verified: true,
         paymentRef: response.reference
       });
 
-      alert("Vendor verified 🟢");
-
+      alert("Vendor verified!");
       location.reload();
     },
 
@@ -219,24 +235,10 @@ window.payForVerification = function (vendorId, email) {
   handler.openIframe();
 };
 
-
 // ==========================
-// 9. AUTH STATE
+// ADMIN (basic)
 // ==========================
-onAuthStateChanged(auth, (user) => {
-
-  const container = document.querySelector(".container");
-
-  if (user) {
-    if (container) container.style.display = "block";
-  } else {
-    if (container) container.style.display = "none";
-  }
-});
-window.goCustomer = function () {
-  window.location.href = "customer.html";
-};
-
-window.goVendor = function () {
-  window.location.href = "vendor.html";
+window.deleteVendor = async function (id) {
+  await deleteDoc(doc(db, "vendors", id));
+  alert("Deleted");
 };
