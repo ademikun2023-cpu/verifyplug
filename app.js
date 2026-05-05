@@ -265,3 +265,43 @@ window.goVendor = function () {
   }
 
 });
+window.signup = async function () {
+
+  let email = document.getElementById("email").value;
+  let password = document.getElementById("password").value;
+  let role = document.getElementById("role").value;
+
+  await createUserWithEmailAndPassword(auth, email, password);
+
+  const user = auth.currentUser;
+
+  await setDoc(doc(db, "users", user.uid), {
+    email: user.email,
+    role: role
+  });
+
+  routeUser(role);
+};
+window.login = async function () {
+
+  let email = document.getElementById("email").value;
+  let password = document.getElementById("password").value;
+
+  await signInWithEmailAndPassword(auth, email, password);
+
+  const user = auth.currentUser;
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+
+  if (userDoc.exists()) {
+    const role = userDoc.data().role;
+    routeUser(role);
+  }
+};
+function routeUser(role) {
+  if (role === "vendor") {
+    window.location.href = "vendor.html";
+  } else {
+    window.location.href = "customer.html";
+  }
+}
