@@ -1,37 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VerifyPlug - Vendor</title>
+  <title>Vendor - VerifyPlug</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
-  <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 
 <body>
+<div class="status-wrapper">
+  <div id="statusDot" class="status-dot status-unpaid"></div>
+  <span id="statusText">Not Verified</span>
+</div>
+<div class="topbar">
+  <b>VerifyPlug Vendor</b>
+</div>
+
 <div class="container">
 
-  <div class="header">
-    <h1>Vendor Dashboard 🧑‍💼</h1>
-    <p class="sub">List your business</p>
+  <!-- ADD BUSINESS -->
+  <div class="card">
+    <h2>Add Your Business</h2>
+
+    <input id="vendorName" placeholder="Business Name">
+    <input id="vendorPhone" placeholder="Phone Number">
+    <input id="vendorLocation" placeholder="Location">
+
+    <button onclick="addVendor()">Add Business</button>
   </div>
 
+  <!-- PAY FOR VERIFICATION -->
   <div class="card">
+    <h2>Verify Your Business</h2>
 
-    <div class="label">Add Business</div>
+    <p>Pay ₦10,000 to get verified badge</p>
 
-    <div class="stack">
-      <input id="vendorName" placeholder="Business name">
-      <input id="vendorPhone" placeholder="Phone">
-      <input id="vendorLocation" placeholder="Location">
-      <button onclick="addVendor()">Submit</button>
-    </div>
-<button onclick="payForVerification('${id}', '${data.email}')">
-  Pay ₦10,000 to Verify
-</button>
+    <input id="verifyEmail" placeholder="Your Email">
+
+    <button onclick="payForVerification('YOUR_VENDOR_ID', verifyEmail.value)">
+      Pay ₦10,000 & Verify
+    </button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card">
+    <h2>Status</h2>
+    <div id="result"></div>
   </div>
 
 </div>
 
-  <script type="module" src="app.js"></script>
+<script type="module" src="./app.js"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
 </body>
 </html>

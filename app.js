@@ -67,23 +67,18 @@ window.signup = async () => {
 };
 
 window.login = async () => {
+
   let email = document.getElementById("emailInput").value;
   let password = document.getElementById("passwordInput").value;
 
   try {
     const userCred = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCred.user;
 
-    // 🔥 ADMIN CHECK
-    if (user.email === "ademikun2023@gmail.com") {
-      window.location.href = "admin.html";
-      return;
-    }
+    const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
 
-    // normal users
-    const userDoc = await getDoc(doc(db, "users", user.uid));
     const role = userDoc.data().role;
 
+    alert("Login successful");
 
     if (role === "vendor") {
       window.location.href = "vendor.html";
@@ -148,23 +143,34 @@ window.reportScam = async () => {
 };
 
 // ================= PAYSTACK =================
-window.payForVerification = (vendorId, email) => {
+window.payForVerification = function (vendorId, email) {
 
   let handler = PaystackPop.setup({
     key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
     email: email,
-    amount: 10000 * 100, // ₦10,000
+    amount: 10000 * 100,
     currency: "NGN",
 
+    // 👇 THIS IS THE CALLBACK (PUT HERE)
     callback: async function (response) {
+
+      alert("Payment successful ✔");
 
       await updateDoc(doc(db, "vendors", vendorId), {
         verified: true,
         paymentRef: response.reference
       });
 
-      alert("Vendor verified");
+      // 👇 update UI status after payment
+      if (window.setStatus) {
+        setStatus(true);
+      }
+
       location.reload();
+    },
+
+    onClose: function () {
+      alert("Payment cancelled");
     }
   });
 
@@ -197,3 +203,32 @@ window.deleteVendor = async (id) => {
 if (window.location.pathname.includes("admin.html")) {
   loadAdmin();
 }
+window.setStatus = function(isPaid) {
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+
+  if (!dot || !text) return;
+
+  if (isPaid) {
+    dot.classList.add("status-paid");
+    dot.classList.remove("status-unpaid");
+    text.innerText = "Verified";
+  } else {
+    dot.classList.add("status-unpaid");
+    dot.classList.remove("status-paid");
+    text.innerText = "Not Verified";
+  }
+};
+window.setStatus = function(isPaid) {
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+
+  if (!dot || !text) return;
+
+  if (isPaid) {
+    dot.classList.add("status-paid");
+    text.innerText = "Verified";
+  } else {
+    text.innerText = "Not Verified";
+  }
+};
