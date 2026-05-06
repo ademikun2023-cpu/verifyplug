@@ -21,25 +21,25 @@
     <h1>Verify Before You Pay 🔍</h1>
     <p class="sub">Avoid scams. Verify vendors instantly.</p>
   </div>
+<div class="card">
+  <div class="label">Account</div>
 
-  <div class="card">
-    <div class="label">Account</div>
+  <div class="stack">
+    <input id="emailInput" placeholder="Email">
+    <input id="passwordInput" type="password" placeholder="Password">
 
-    <div class="stack">
-      <input id="email" placeholder="Email">
-      <input id="password" type="password" placeholder="Password">
+    <select id="roleInput">
+      <option value="customer">Customer</option>
+      <option value="vendor">Vendor</option>
+    </select>
 
-      <select id="role">
-        <option value="customer">Customer</option>
-        <option value="vendor">Vendor</option>
-      </select>
-
-      <button onclick="signup()">Sign Up</button>
-      <button onclick="login()">Login</button>
-    </div>
+    <button onclick="signup()">Sign Up</button>
+    <button onclick="login()">Login</button>
   </div>
+</div>>
 
 </div>
-<script type="module" src="app.js"></script>
+
+<script src="/app.js" type="module"></script>
 </body>
 </html>
