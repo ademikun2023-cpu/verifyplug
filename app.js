@@ -162,7 +162,6 @@ window.payForVerification = function (vendorId, email) {
     amount: 10000 * 100,
     currency: "NGN",
 
-    // 👇 THIS IS THE CALLBACK (PUT HERE)
     callback: async function (response) {
 
       alert("Payment successful ✔");
@@ -171,11 +170,6 @@ window.payForVerification = function (vendorId, email) {
         verified: true,
         paymentRef: response.reference
       });
-
-      // 👇 update UI status after payment
-      if (window.setStatus) {
-        setStatus(true);
-      }
 
       location.reload();
     },
