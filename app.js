@@ -1,4 +1,4 @@
-console.log("APP LOADED SUCCESSFULLY");
+where
 
 // ================= FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -91,15 +91,26 @@ window.login = async () => {
   }
 };
 // ================= ADD VENDOR =================
-window.addVendor = async () => {
+window.addVendor = async function () {
+
+  const user = auth.currentUser;
+
+  let name = document.getElementById("vendorName").value;
+  let phone = document.getElementById("vendorPhone").value;
+  let location = document.getElementById("vendorLocation").value;
+
   await addDoc(collection(db, "vendors"), {
-    name: vendorName.value,
-    phone: vendorPhone.value,
-    location: vendorLocation.value,
-    verified: false
+    name,
+    phone,
+    location,
+    createdBy: user.email,
+    verified: false,
+    searches: 0
   });
 
-  alert("Vendor added");
+  alert("Business added successfully");
+
+  location.reload();
 };
 
 // ================= SEARCH =================
@@ -232,3 +243,57 @@ window.setStatus = function(isPaid) {
     text.innerText = "Not Verified";
   }
 };
+window.loadVendorDashboard = async function () {
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  const q = query(
+    collection(db, "vendors"),
+    where("createdBy", "==", user.email)
+  );
+
+  const snap = await getDocs(q);
+
+  if (!snap.empty) {
+
+    const vendor = snap.docs[0];
+    const data = vendor.data();
+
+    document.getElementById("vendorForm").style.display = "none";
+
+    document.getElementById("vendorDashboard").style.display = "block";
+
+    document.getElementById("welcomeText").innerText =
+      `Hi ${data.name} 👋`;
+
+    let score = data.verified ? 85 : 45;
+
+    document.getElementById("trustFill").style.width =
+      score + "%";
+
+    document.getElementById("trustText").innerText =
+      score + "% Trusted";
+
+    document.getElementById("searchCount").innerText =
+      data.searches || 0;
+
+    if (data.verified) {
+      setStatus(true);
+      document.getElementById("verifyBtn").style.display = "none";
+    }
+
+    document.getElementById("verifyBtn").onclick = () => {
+      payForVerification(vendor.id, user.email);
+    };
+  }
+};
+
+// 👇 PUT THIS UNDER IT
+if (window.location.pathname.includes("vendor.html")) {
+  loadVendorDashboard();
+}
+if (window.location.pathname.includes("vendor.html")) {
+  loadVendorDashboard();
+}

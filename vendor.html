@@ -1,56 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Vendor - VerifyPlug</title>
+  <title>Vendor Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-<div class="status-wrapper">
-  <div id="statusDot" class="status-dot status-unpaid"></div>
-  <span id="statusText">Not Verified</span>
-</div>
+
 <div class="topbar">
-  <b>VerifyPlug Vendor</b>
+  VerifyPlug Vendor
+</div>
+
+<!-- STATUS -->
+<div class="status-wrapper">
+  <div id="statusDot" class="status-dot"></div>
+  <span id="statusText">Not Verified</span>
 </div>
 
 <div class="container">
 
-  <!-- ADD BUSINESS -->
-  <div class="card">
+  <!-- ADD BUSINESS FORM -->
+  <div class="card" id="vendorForm">
+
     <h2>Add Your Business</h2>
 
     <input id="vendorName" placeholder="Business Name">
     <input id="vendorPhone" placeholder="Phone Number">
     <input id="vendorLocation" placeholder="Location">
 
-    <button onclick="addVendor()">Add Business</button>
-  </div>
-
-  <!-- PAY FOR VERIFICATION -->
-  <div class="card">
-    <h2>Verify Your Business</h2>
-
-    <p>Pay ₦10,000 to get verified badge</p>
-
-    <input id="verifyEmail" placeholder="Your Email">
-
-    <button onclick="payForVerification('YOUR_VENDOR_ID', verifyEmail.value)">
-      Pay ₦10,000 & Verify
+    <button onclick="addVendor()">
+      Add Business
     </button>
+
   </div>
 
-  <!-- RESULT -->
-  <div class="card">
-    <h2>Status</h2>
-    <div id="result"></div>
+  <!-- DASHBOARD -->
+  <div class="card" id="vendorDashboard" style="display:none;">
+
+    <h2 id="welcomeText">Hi Vendor 👋</h2>
+
+    <div>
+      <b>Trust Score</b>
+      <div class="trust-bar">
+        <div class="trust-fill" id="trustFill"></div>
+      </div>
+      <small id="trustText">0%</small>
+    </div>
+
+    <div>
+      <b>Total Searches</b>
+      <h1 id="searchCount">0</h1>
+    </div>
+
+    <button id="verifyBtn">
+      Pay ₦10,000 For Verification
+    </button>
+
   </div>
 
 </div>
 
-<script type="module" src="./app.js"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<script type="module" src="./app.js"></script>
 
 </body>
 </html>
