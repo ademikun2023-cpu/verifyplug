@@ -156,24 +156,43 @@ window.reportScam = async () => {
 // ================= PAYSTACK =================
 window.payForVerification = function (vendorId, email) {
 
+  if (!vendorId || !email) {
+    alert("Missing vendor info");
+    return;
+  }
+
   let handler = PaystackPop.setup({
-    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
+    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9", // your public key
     email: email,
-    amount: 10000 * 100,
+    amount: 10000 * 100, // ₦10,000 in kobo
     currency: "NGN",
 
+    // 🔥 CALLBACK (THIS IS WHERE PAYMENT SUCCESS IS HANDLED)
     callback: async function (response) {
 
-      alert("Payment successful ✔");
+      console.log("Payment successful:", response);
 
-      await updateDoc(doc(db, "vendors", vendorId), {
-        verified: true,
-        paymentRef: response.reference
-      });
+      try {
+        await updateDoc(doc(db, "vendors", vendorId), {
+          verified: true,
+          paymentRef: response.reference
+        });
 
-      location.reload();
+        // update UI if available
+        if (window.setStatus) {
+          setStatus(true);
+        }
+
+        alert("Payment successful ✔ Vendor is now verified");
+        location.reload();
+
+      } catch (err) {
+        console.error("Firebase update error:", err);
+        alert("Payment succeeded but update failed");
+      }
     },
 
+    // ❌ USER CLOSED POPUP
     onClose: function () {
       alert("Payment cancelled");
     }
