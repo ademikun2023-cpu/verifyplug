@@ -289,11 +289,10 @@ window.loadVendorDashboard = async function () {
     };
   }
 };
+onAuthStateChanged(auth, (user) => {
 
-// 👇 PUT THIS UNDER IT
-if (window.location.pathname.includes("vendor.html")) {
-  loadVendorDashboard();
-}
-if (window.location.pathname.includes("vendor.html")) {
-  loadVendorDashboard();
-}
+  if (user && window.location.pathname.includes("vendor.html")) {
+    loadVendorDashboard();
+  }
+
+});
