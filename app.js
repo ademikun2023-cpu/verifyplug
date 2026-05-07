@@ -162,37 +162,29 @@ window.payForVerification = function (vendorId, email) {
   }
 
   let handler = PaystackPop.setup({
-    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9", // your public key
+    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
     email: email,
-    amount: 10000 * 100, // ₦10,000 in kobo
+    amount: 10000 * 100,
     currency: "NGN",
 
-    // 🔥 CALLBACK (THIS IS WHERE PAYMENT SUCCESS IS HANDLED)
-    callback: async function (response) {
+    // ✅ MUST BE INSIDE HERE EXACTLY
+    callback: function (response) {
 
-      console.log("Payment successful:", response);
+      console.log("PAYSTACK SUCCESS:", response);
 
-      try {
-        await updateDoc(doc(db, "vendors", vendorId), {
-          verified: true,
-          paymentRef: response.reference
-        });
-
-        // update UI if available
-        if (window.setStatus) {
-          setStatus(true);
-        }
-
-        alert("Payment successful ✔ Vendor is now verified");
+      updateDoc(doc(db, "vendors", vendorId), {
+        verified: true,
+        paymentRef: response.reference
+      }).then(() => {
+        alert("Payment successful ✔ Vendor verified");
         location.reload();
+      }).catch(err => {
+        console.error(err);
+        alert("Payment ok but DB update failed");
+      });
 
-      } catch (err) {
-        console.error("Firebase update error:", err);
-        alert("Payment succeeded but update failed");
-      }
     },
 
-    // ❌ USER CLOSED POPUP
     onClose: function () {
       alert("Payment cancelled");
     }
@@ -200,7 +192,6 @@ window.payForVerification = function (vendorId, email) {
 
   handler.openIframe();
 };
-
 // ================= ADMIN =================
 window.loadAdmin = async () => {
 
