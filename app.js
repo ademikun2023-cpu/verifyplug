@@ -272,7 +272,7 @@ window.reportScam = async function () {
 window.payForVerification = function (vendorId, email) {
 let handler = PaystackPop.setup({
 
-  key: "YOUR_PUBLIC_KEY",
+  key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
 
   email: email,
 
