@@ -842,8 +842,10 @@ window.closeModal = function () {
     "none";
 };
 
+// ============================
 // BAN VENDOR FROM REPORT
-document.getElementById("banBtn").onclick = async function () {
+// ============================
+window.banVendorFromReport = async function () {
 
   if (!selectedReport) return;
 
@@ -853,6 +855,11 @@ document.getElementById("banBtn").onclick = async function () {
   );
 
   const snap = await getDocs(q);
+
+  if (snap.empty) {
+    alert("Vendor not found");
+    return;
+  }
 
   snap.forEach(async (docItem) => {
 
