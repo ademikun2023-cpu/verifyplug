@@ -221,10 +221,7 @@ window.reportScam = async function () {
 
   const user = auth.currentUser;
 
-  if (!user) {
-    alert("Login required");
-    return;
-  }
+  if (!user) return;
 
   let phone = document.getElementById("scamPhone").value;
   let reason = document.getElementById("scamReason").value;
@@ -236,17 +233,17 @@ window.reportScam = async function () {
 
   try {
 
-   await addDoc(collection(db, "scamReports"), {
+    // 1. SAVE REPORT
+    await addDoc(collection(db, "scamReports"), {
 
-  reporterEmail: user.email,
-  phone: phone,
-  reason: reason,
+      reporterEmail: user.email,
+      phone: phone,
+      reason: reason,
+      createdAt: new Date()
 
-  createdAt: new Date()
+    });
 
-});
-
-    // OPTIONAL: reduce trust score (if you already linked vendor search system)
+    // 2. FIND VENDOR BY PHONE (IMPORTANT FIX)
     const q = query(
       collection(db, "vendors"),
       where("phone", "==", phone)
@@ -254,17 +251,23 @@ window.reportScam = async function () {
 
     const snap = await getDocs(q);
 
-    snap.forEach(async (d) => {
-      await updateDoc(doc(db, "vendors", d.id), {
-        trustScore: increment(-25)
+    snap.forEach(async (docSnap) => {
+
+      const data = docSnap.data();
+
+      let currentScore = data.trustScore ?? 100;
+
+      // 3. REDUCE TRUST SCORE (-25 FIX)
+      await updateDoc(doc(db, "vendors", docSnap.id), {
+        trustScore: currentScore - 25
       });
+
     });
 
     alert("Report submitted ✔");
 
   } catch (err) {
     console.error(err);
-    alert(err.message);
   }
 };
 
@@ -728,34 +731,41 @@ onAuthStateChanged(auth, (user) => {
 let selectedReport = null;
 
 // LOAD REPORTS
+let selectedReport = null;
+
 window.loadScamReports = async function () {
 
   const snap = await getDocs(collection(db, "scamReports"));
 
-  const list = document.getElementById("reportsList");
-  list.innerHTML = "";
+  const box = document.getElementById("reportsList");
+  box.innerHTML = "";
 
-  snap.forEach((docItem) => {
+  snap.forEach(docItem => {
 
-    const data = docItem.data();
+    const d = docItem.data();
 
     const div = document.createElement("div");
 
     div.className = "result-card";
 
     div.innerHTML = `
-      <b>${data.phone}</b><br>
-      ${data.reason}<br><br>
+      <b>Phone:</b> ${d.phone}<br>
+      <b>Reason:</b> ${d.reason}<br>
+      <b>By:</b> ${d.reporterEmail}<br><br>
 
-      <button onclick='openReportModal("${docItem.id}", "${data.phone}", "${data.reason}", "${data.reporterEmail}")'>
-        View
+      <button onclick="openReportModal(
+        '${docItem.id}',
+        '${d.phone}',
+        '${d.reason}',
+        '${d.reporterEmail}'
+      )">
+        View Report
       </button>
     `;
 
-    list.appendChild(div);
+    box.appendChild(div);
   });
 };
-
 // OPEN MODAL
 window.openReportModal = function (id, phone, reason, email) {
 
@@ -791,6 +801,35 @@ document.getElementById("banBtn").onclick = async function () {
   );
 
   const snap = await getDocs(q);
+
+  snap.forEach(async (docItem) => {
+
+    await updateDoc(doc(db, "vendors", docItem.id), {
+      banned: true,
+      verified: false
+    });
+
+  });
+
+  alert("Vendor banned ✔");
+
+  closeModal();
+};
+window.banVendorFromReport = async function () {
+
+  if (!selectedReport) return;
+
+  const q = query(
+    collection(db, "vendors"),
+    where("phone", "==", selectedReport.phone)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    alert("Vendor not found");
+    return;
+  }
 
   snap.forEach(async (docItem) => {
 
