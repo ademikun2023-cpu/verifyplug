@@ -1,59 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
+  <title>VerifyPlug Admin</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="topbar">
-  VerifyPlug Admin Panel
-</div>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    VerifyPlug Admin Dashboard
+  </div>
 
-<div class="container">
+  <!-- MAIN ADMIN LAYOUT -->
+  <div class="admin-layout">
 
-  <!-- SCAM REPORTS -->
- <div class="card">
+    <!-- SCAM REPORTS -->
+    <div class="admin-section">
 
-  <h2>Scam Reports Inbox</h2>
+      <h2>🚨 Scam Reports</h2>
 
-  <div id="reportsList"></div>
+      <div id="reportsList"></div>
 
-</div>
+    </div>
 
-<!-- MODAL -->
-<div id="reportModal" class="modal">
+    <!-- VENDORS -->
+    <div class="admin-section">
 
-  <div class="modal-content">
+      <h2>🏪 Vendors</h2>
 
-    <h3>Report Details</h3>
+      <div id="vendorList"></div>
 
-    <p id="modalPhone"></p>
-    <p id="modalReason"></p>
-    <p id="modalEmail"></p>
-
-    <button onclick="banVendorFromReport()">Ban Vendor</button>
-    <button onclick="closeModal()">Close</button>
+    </div>
 
   </div>
 
-</div>
-</div>
+  <!-- REPORT MODAL -->
+  <div id="reportModal" class="modal">
 
-  <!-- VENDORS -->
-  <div class="card">
+    <div class="modal-content">
 
-    <h2>All Vendors</h2>
+      <h2>Report Details</h2>
 
-    <div id="vendorBox"></div>
+      <p id="modalPhone"></p>
+
+      <p id="modalReason"></p>
+
+      <p id="modalEmail"></p>
+
+      <div class="modal-buttons">
+
+        <button onclick="banVendorFromReport()">
+          Ban Vendor
+        </button>
+
+        <button onclick="closeModal()">
+          Close
+        </button>
+
+      </div>
+
+    </div>
 
   </div>
 
-</div>
-
-<script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 
 </body>
 </html>

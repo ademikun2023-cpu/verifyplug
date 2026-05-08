@@ -197,25 +197,39 @@ window.searchVendor = async () => {
   await trackVendorSearch();
   result.innerHTML = "";
 
-  snap.forEach(async (docItem) => {
-    let data = docItem.data();
-    await updateDoc(doc(db, "vendors", docItem.id), {
-  searchCount: increment(1)
-});
-    let scams = await getDocs(collection(db, "vendors", docItem.id, "scams"));
-    let score = 100 - (scams.size * 15);
+snap.forEach(async (docItem) => {
 
-    if (score < 0) score = 0;
+  let data = docItem.data();
 
-    result.innerHTML += `
-      <div class="card">
-        <b>${data.name}</b><br/>
-        ${data.phone}<br/>
-        Trust Score: ${score}%<br/>
-        ${data.verified ? "🟢 Verified" : "⚪ Not Verified"}
-      </div>
-    `;
+  // UPDATE SEARCH COUNT
+  await updateDoc(doc(db, "vendors", docItem.id), {
+    searchCount: increment(1)
   });
+
+  // USE REAL TRUST SCORE
+  const trustScore =
+    typeof data.trustScore === "number"
+      ? data.trustScore
+      : Number(data.trustScore) || 100;
+
+  result.innerHTML += `
+    <div class="card">
+
+      <b>${data.name}</b><br/>
+
+      ${data.phone}<br/>
+
+      Trust Score: ${trustScore}%<br/>
+
+      ${
+        data.verified
+          ? "🟢 Verified"
+          : "⚪ Not Verified"
+      }
+
+    </div>
+  `;
+});
 };
 window.reportScam = async function () {
 
@@ -661,26 +675,52 @@ window.banVendor = async function (vendorId, email, phone, businessName) {
 };
 window.loadAdminDashboard = async function () {
 
+  const reportsBox =
+    document.getElementById("reportsList");
+
+  const vendorsBox =
+    document.getElementById("vendorList");
+
+  // SAFETY CHECK
+  if (!reportsBox || !vendorsBox) {
+    console.error("Admin containers missing");
+    return;
+  }
+
+  reportsBox.innerHTML = "";
+  vendorsBox.innerHTML = "";
+
   // =========================
   // LOAD SCAM REPORTS
   // =========================
-  const reportsSnap = await getDocs(collection(db, "scamReports"));
-
-  const reportsBox = document.getElementById("reportsBox");
-  reportsBox.innerHTML = "";
+  const reportsSnap =
+    await getDocs(collection(db, "scamReports"));
 
   reportsSnap.forEach(docItem => {
 
-    const data = docItem.data();
+    const d = docItem.data();
 
     const div = document.createElement("div");
 
-    div.className = "result-card";
+    div.className = "card";
 
     div.innerHTML = `
-      <b>Phone:</b> ${data.phone}<br>
-      <b>Reason:</b> ${data.reason}<br>
-      <b>By:</b> ${data.reporterEmail}<br><br>
+      <h3>🚨 Scam Report</h3>
+
+      <p><b>Phone:</b> ${d.phone}</p>
+
+      <p><b>Reason:</b> ${d.reason}</p>
+
+      <p><b>By:</b> ${d.reporterEmail}</p>
+
+      <button onclick="openReportModal(
+        '${docItem.id}',
+        '${d.phone}',
+        '${d.reason}',
+        '${d.reporterEmail}'
+      )">
+        View Report
+      </button>
     `;
 
     reportsBox.appendChild(div);
@@ -689,36 +729,48 @@ window.loadAdminDashboard = async function () {
   // =========================
   // LOAD VENDORS
   // =========================
-  const vendorSnap = await getDocs(collection(db, "vendors"));
+  const vendorsSnap =
+    await getDocs(collection(db, "vendors"));
 
-  const vendorBox = document.getElementById("vendorBox");
-  vendorBox.innerHTML = "";
+  vendorsSnap.forEach(docItem => {
 
-  vendorSnap.forEach(docItem => {
+    const d = docItem.data();
 
-    const v = docItem.data();
+    const trustScore =
+      typeof d.trustScore === "number"
+        ? d.trustScore
+        : Number(d.trustScore) || 100;
 
     const div = document.createElement("div");
 
-    div.className = "result-card";
+    div.className = "card";
 
     div.innerHTML = `
-      <b>${v.name}</b><br>
-      Phone: ${v.phone}<br>
-      Trust: ${v.trustScore ?? 100}%<br>
-      Status: ${v.banned ? "🚫 BANNED" : "🟢 ACTIVE"}<br><br>
+      <h3>${d.name}</h3>
+
+      <p>${d.phone}</p>
+
+      <p>Trust Score: ${trustScore}%</p>
+
+      <p>
+        ${
+          d.banned
+            ? "🚫 BANNED"
+            : "🟢 ACTIVE"
+        }
+      </p>
 
       <button onclick="banVendor(
         '${docItem.id}',
-        '${v.createdBy}',
-        '${v.phone}',
-        '${v.name}'
+        '${d.createdBy}',
+        '${d.phone}',
+        '${d.name}'
       )">
         Ban Vendor
       </button>
     `;
 
-    vendorBox.appendChild(div);
+    vendorsBox.appendChild(div);
   });
 };
 onAuthStateChanged(auth, (user) => {
