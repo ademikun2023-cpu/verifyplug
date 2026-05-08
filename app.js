@@ -270,40 +270,29 @@ window.reportScam = async function () {
 
 // ================= PAYSTACK =================
 window.payForVerification = function (vendorId, email) {
+let handler = PaystackPop.setup({
 
-  let handler = PaystackPop.setup({
+  key: "YOUR_PUBLIC_KEY",
 
-    key: "YOUR_PUBLIC_KEY_HERE",
+  email: email,
 
-    email: email,
+  amount: 10000 * 100,
 
-    amount: 10000 * 100,
+  currency: "NGN",
 
-    currency: "NGN",
+  callback: function (response) {
+    console.log("Payment success:", response);
 
-    callback: async function (response) {
+    // your verify logic here
+  },
 
-      // MARK DIRECTLY VERIFIED (NO REQUEST SYSTEM)
-      await updateDoc(doc(db, "vendors", vendorId), {
+  onClose: function () {
+    alert("Payment cancelled");
+  }
 
-        verified: true,
-        trustScore: 100
+});
 
-      });
-
-      alert("Payment successful ✔ You are now verified");
-
-      location.reload();
-
-    },
-
-    onClose: function () {
-      alert("Payment cancelled");
-    }
-
-  });
-
-  handler.openIframe();
+handler.openIframe();
 };
 // ================= ADMIN =================
 window.loadAdmin = async () => {
