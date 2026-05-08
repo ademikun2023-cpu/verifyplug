@@ -728,7 +728,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-let selectedReport = null;
+
 
 // LOAD REPORTS
 let selectedReport = null;
