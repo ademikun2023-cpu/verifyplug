@@ -7,31 +7,55 @@
 </head>
 
 <body>
+
+<div class="topbar">
+  VerifyPlug Admin Panel
 </div>
+
 <div class="container">
 
-  <div class="header">
-    <h1>Vendor Dashboard 🧑‍💼</h1>
-    <p class="sub">List your business</p>
+  <!-- SCAM REPORTS -->
+ <div class="card">
+
+  <h2>Scam Reports Inbox</h2>
+
+  <div id="reportsList"></div>
+
+</div>
+
+<!-- MODAL -->
+<div id="reportModal" class="modal">
+
+  <div class="modal-content">
+
+    <h3>Report Details</h3>
+
+    <p id="modalEmail"></p>
+    <p id="modalPhone"></p>
+    <p id="modalReason"></p>
+
+    <button id="banBtn">Ban Vendor</button>
+
+    <button onclick="closeModal()">
+      Close
+    </button>
+
   </div>
 
+</div>
+
+  <!-- VENDORS -->
   <div class="card">
 
-    <div class="label">Add Business</div>
+    <h2>All Vendors</h2>
 
-    <div class="stack">
-      <input id="vendorName" placeholder="Business name">
-      <input id="vendorPhone" placeholder="Phone">
-      <input id="vendorLocation" placeholder="Location">
-      <button onclick="addVendor()">Submit</button>
-    </div>
-<div class="card">
-  <div class="label">Verification Requests</div>
-  <div id="requestList"></div>
-</div>
+    <div id="vendorBox"></div>
+
   </div>
 
 </div>
- <script type="module" src="app.js"></script>
+
+<script type="module" src="./app.js"></script>
+
 </body>
 </html>

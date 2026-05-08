@@ -12,13 +12,21 @@
   VerifyPlug Vendor
 </div>
 
+<!-- 🚫 BAN SCREEN (NEW) -->
+<div id="banScreen" style="display:none; text-align:center; padding:50px;">
+  <h1 style="color:red;">🚫 ACCOUNT BANNED</h1>
+  <p>Your account has been banned due to unethical business practices.</p>
+  <p>You can no longer access VerifyPlug services.</p>
+</div>
+
 <!-- STATUS -->
 <div class="status-wrapper">
   <div id="statusDot" class="status-dot"></div>
   <span id="statusText">Not Verified</span>
 </div>
 
-<div class="container">
+<!-- ✅ MAIN CONTAINER -->
+<div class="container" id="mainContainer">
 
   <!-- ADD BUSINESS FORM -->
   <div class="card" id="vendorForm">
@@ -63,5 +71,6 @@
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script type="module" src="./app.js"></script>
+
 </body>
 </html>

@@ -1,53 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VerifyPlug - Customer</title>
+  <title>Customer Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
+<div class="topbar">
+  VerifyPlug
 </div>
-  <div class="container">
 
-  <div class="header">
-    <h1>Customer Dashboard 🔍</h1>
-    <p class="sub">Search and verify vendors</p>
-  </div>
+<div class="container">
 
-  <div class="card">
-    <div class="label">Search Vendor</div>
+  <!-- HERO -->
+  <div class="hero-card">
 
-    <div class="stack">
-      <input id="searchInput" placeholder="Phone number">
-      <button onclick="searchVendor()">Search</button>
+    <div class="hero-logo">🔍</div>
+
+    <h1 id="welcomeText">Hi Customer 👋</h1>
+
+    <p class="hero-sub">
+      Verify vendors before payment and avoid scams.
+    </p>
+
+    <div class="stats-box">
+      <div class="stats-number" id="weeklySearches">0</div>
+      <div class="stats-label">
+        Vendors searched this week
+      </div>
     </div>
-<div style="margin-top:10px;">
-  <div style="font-size:12px; opacity:0.7;">Trust Score</div>
 
-  <div style="height:10px; background:#1f2937; border-radius:20px; overflow:hidden; margin-top:6px;">
-    <div style="width:70%; height:100%; background:linear-gradient(90deg,#22c55e,#16a34a);"></div>
   </div>
 
-  <div style="font-size:12px; margin-top:6px; opacity:0.7;">
-    70% Trusted
-  </div>
-</div>
+  <!-- SEARCH -->
+  <div class="card">
+
+    <h2>Search Vendor</h2>
+
+    <input
+      id="searchInput"
+      placeholder="Enter vendor phone number"
+    >
+
+    <button onclick="searchVendor()">
+      Search
+    </button>
+
     <div id="result"></div>
+
   </div>
 
+  <!-- REPORT SCAM -->
   <div class="card">
-    <div class="label">Report Scam</div>
 
-    <div class="stack">
-      <input id="scamPhone" placeholder="Phone">
-      <input id="scamReason" placeholder="Reason">
-      <button onclick="reportScam()">Report</button>
-    </div>
+    <h2>Report Scam</h2>
+
+    <input
+      id="scamPhone"
+      placeholder="Vendor phone number"
+    >
+
+    <input
+      id="scamReason"
+      placeholder="Reason"
+    >
+
+    <button onclick="reportScam()">
+      Report Scam
+    </button>
+
   </div>
 
 </div>
 
-  <script type="module" src="app.js"></script>
+<script type="module" src="./app.js"></script>
+
 </body>
 </html>
