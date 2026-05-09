@@ -138,84 +138,111 @@ window.login = async () => {
 
   }
 };
-// ================= ADD VENDOR =================
 window.addVendor = async function () {
 
   const user = auth.currentUser;
 
   if (!user) {
-    showToast("You must be logged in");
+    showToast("Login required", "error");
     return;
   }
 
+  // =========================
   // INPUT VALUES
-  let name =
+  // =========================
+  const vendorName =
     document.getElementById("vendorName").value;
 
-  let phone =
+  const vendorPhone =
     document.getElementById("vendorPhone").value;
 
-  let location =
+  const vendorLocation =
     document.getElementById("vendorLocation").value;
 
+  // =========================
   // VALIDATION
-  if (!name || !phone || !location) {
-    showToast("Fill all fields");
+  // =========================
+  if (
+    !vendorName ||
+    !vendorPhone ||
+    !vendorLocation
+  ) {
+    showToast(
+      "Please fill all fields",
+      "warning"
+    );
     return;
   }
 
-  try {
+  // =========================
+  // CHECK IF PHONE EXISTS
+  // =========================
+  const q = query(
+    collection(db, "vendors"),
+    where("phone", "==", vendorPhone)
+  );
 
-    // CHECK IF USER ALREADY HAS BUSINESS
-    const q = query(
-      collection(db, "vendors"),
-      where("createdBy", "==", user.email)
+  const existing =
+    await getDocs(q);
+
+  if (!existing.empty) {
+
+    showToast(
+      "Vendor already exists",
+      "error"
     );
 
-    const existingVendor = await getDocs(q);
-
-    if (!existingVendor.empty) {
-      showToast("You already added a business");
-      return;
-    }
-
-    // ADD VENDOR
-await addDoc(collection(db, "vendors"), {
-
-  name: vendorName,
-
-  phone: vendorPhone,
-
-  location: vendorLocation,
-
-  verified: false,
-
-  banned: false,
-
-  trustScore: 100,
-
-  averageRating: 0,
-
-  searchCount: 0,
-
-  purchaseCodes: [],
-
-  createdBy: user.email,
-
-  createdAt: new Date()
-});
-
-    showToast("Business added successfully ✔");
-
-    // RELOAD DASHBOARD
-    loadVendorDashboard();
-
-  } catch (err) {
-
-    console.error(err);
-    alert(err.message);
-
+    return;
   }
+
+  // =========================
+  // ADD VENDOR
+  // =========================
+  await addDoc(
+    collection(db, "vendors"),
+    {
+
+      name: vendorName,
+
+      phone: vendorPhone,
+
+      location: vendorLocation,
+
+      verified: false,
+
+      banned: false,
+
+      trustScore: 100,
+
+      averageRating: 0,
+
+      searchCount: 0,
+
+      purchaseCodes: [],
+
+      createdBy: user.email,
+
+      createdAt: new Date()
+    }
+  );
+
+  showToast(
+    "Business added successfully ✔"
+  );
+
+  // =========================
+  // CLEAR INPUTS
+  // =========================
+  document.getElementById("vendorName").value = "";
+
+  document.getElementById("vendorPhone").value = "";
+
+  document.getElementById("vendorLocation").value = "";
+
+  // =========================
+  // RELOAD DASHBOARD
+  // =========================
+  loadVendorDashboard();
 };
 
 // ================= SEARCH =================
