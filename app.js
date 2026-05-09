@@ -38,6 +38,29 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// ============================
+// PROFESSIONAL TOAST SYSTEM
+// ============================
+
+window.showToast = function (
+  message,
+  type = "success"
+) {
+
+  const toast =
+    document.getElementById("toast");
+
+  toast.className = "";
+
+  toast.classList.add("show");
+  toast.classList.add(type);
+
+  toast.innerText = message;
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3200);
+};
 // ================= ROUTING =================
 window.goCustomer = () => location.href = "customer.html";
 window.goVendor = () => location.href = "vendor.html";
@@ -85,7 +108,7 @@ window.login = async () => {
     // 🔥 ADMIN BYPASS
     if (user.email === "ademikun2023@gmail.com") {
 
-      alert("Admin login successful ✔");
+    showToast("Admin login successful ✔");
       window.location.href = "admin.html";
       return;
     }
@@ -95,7 +118,7 @@ window.login = async () => {
 
     // if user doc missing
     if (!userDoc.exists()) {
-      alert("User profile not found");
+      showToast("User profile not found");
       return;
     }
 
@@ -121,7 +144,7 @@ window.addVendor = async function () {
   const user = auth.currentUser;
 
   if (!user) {
-    alert("You must be logged in");
+    showToast("You must be logged in");
     return;
   }
 
@@ -137,7 +160,7 @@ window.addVendor = async function () {
 
   // VALIDATION
   if (!name || !phone || !location) {
-    alert("Fill all fields");
+    showToast("Fill all fields");
     return;
   }
 
@@ -152,7 +175,7 @@ window.addVendor = async function () {
     const existingVendor = await getDocs(q);
 
     if (!existingVendor.empty) {
-      alert("You already added a business");
+      showToast("You already added a business");
       return;
     }
 
@@ -177,7 +200,7 @@ window.addVendor = async function () {
 
 });
 
-    alert("Business added successfully ✔");
+    showToast("Business added successfully ✔");
 
     // RELOAD DASHBOARD
     loadVendorDashboard();
@@ -241,7 +264,7 @@ window.reportScam = async function () {
   let reason = document.getElementById("scamReason").value;
 
   if (!phone || !reason) {
-    alert("Fill all fields");
+    showToast("Fill all fields");
     return;
   }
 
@@ -278,7 +301,7 @@ window.reportScam = async function () {
 
     });
 
-    alert("Report submitted ✔");
+    showToast("Report submitted ✔");
 
   } catch (err) {
     console.error(err);
@@ -304,7 +327,7 @@ let handler = PaystackPop.setup({
   },
 
   onClose: function () {
-    alert("Payment cancelled");
+    showToast("Payment cancelled");
   }
 
 });
@@ -331,7 +354,7 @@ window.loadAdmin = async () => {
 
 window.deleteVendor = async (id) => {
   await deleteDoc(doc(db, "vendors", id));
-  alert("Deleted");
+  showToast("Deleted");
   loadAdmin();
 };
 if (window.location.pathname.includes("admin.html")) {
@@ -412,7 +435,7 @@ window.loadVendorDashboard = async function () {
       verified: false
     });
 
-    alert("You have been banned due to low trust score");
+    showToast("You have been banned due to low trust score");
 
     window.location.href = "index.html";
     return;
@@ -665,7 +688,7 @@ window.banVendor = async function (vendorId, email, phone, businessName) {
     verified: false
   });
 
-  alert("Vendor banned ✔");
+  showToast("Vendor banned ✔");
 
   console.log(
     `BANNED NOTICE:
@@ -857,7 +880,7 @@ window.banVendorFromReport = async function () {
   const snap = await getDocs(q);
 
   if (snap.empty) {
-    alert("Vendor not found");
+    showToast("Vendor not found");
     return;
   }
 
@@ -870,7 +893,7 @@ window.banVendorFromReport = async function () {
 
   });
 
-  alert("Vendor banned ✔");
+  showToast("Vendor banned ✔");
 
   closeModal();
 };
@@ -886,7 +909,7 @@ window.banVendorFromReport = async function () {
   const snap = await getDocs(q);
 
   if (snap.empty) {
-    alert("Vendor not found");
+    showToast("Vendor not found");
     return;
   }
 
@@ -899,7 +922,7 @@ window.banVendorFromReport = async function () {
 
   });
 
-  alert("Vendor banned ✔");
+  showToast("Vendor banned ✔");
 
   closeModal();
 };
