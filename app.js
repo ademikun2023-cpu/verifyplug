@@ -1034,10 +1034,21 @@ window.submitReview = async function () {
 
     const codes =
       vendorData.purchaseCodes || [];
+if (codes.includes(purchaseCode)) {
 
-    if (codes.includes(purchaseCode)) {
-      verifiedPurchase = true;
-    }
+  verifiedPurchase = true;
+
+  // REMOVE USED CODE
+  const updatedCodes =
+    codes.filter(
+      code => code !== purchaseCode
+    );
+
+  // UPDATE FIRESTORE
+  await updateDoc(vendorRef, {
+    purchaseCodes: updatedCodes
+  });
+}
   }
 
   // =========================
