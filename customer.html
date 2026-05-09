@@ -76,6 +76,75 @@
 </div>
 <!-- TOAST -->
 <div id="toast"></div>
+<!-- REVIEW MODAL -->
+<div id="reviewModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Share Your Experience</h2>
+
+    <!-- RATING -->
+    <input
+      type="number"
+      id="reviewRating"
+      placeholder="Rate vendor (1-10)"
+      min="1"
+      max="10"
+    >
+
+    <!-- PURCHASE CODE -->
+    <input
+      id="purchaseCode"
+      placeholder="Purchase Code (optional)"
+    >
+
+    <!-- PROS -->
+    <textarea
+      id="reviewPros"
+      placeholder="What went well?"
+    ></textarea>
+
+    <!-- CONS -->
+    <textarea
+      id="reviewCons"
+      placeholder="Anything they could improve?"
+    ></textarea>
+
+    <div class="modal-buttons">
+
+      <button onclick="submitReview()">
+        Submit Review
+      </button>
+
+      <button onclick="closeReviewModal()">
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+<!-- REVIEWS MODAL -->
+<div id="reviewsModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Customer Reviews</h2>
+
+    <div id="reviewsContainer"></div>
+
+    <div class="modal-buttons">
+
+      <button onclick="closeReviewsModal()">
+        Close
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 <script type="module" src="./app.js"></script>
 
 </body>

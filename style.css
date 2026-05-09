@@ -377,3 +377,9 @@ button:active {
 #toast.warning {
   border-left: 5px solid #f59e0b;
 }
+#reviewsContainer {
+  max-height: 420px;
+  overflow-y: auto;
+
+  margin-top: 20px;
+}

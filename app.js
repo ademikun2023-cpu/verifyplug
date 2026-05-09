@@ -180,24 +180,29 @@ window.addVendor = async function () {
     }
 
     // ADD VENDOR
- await addDoc(collection(db, "vendors"), {
+await addDoc(collection(db, "vendors"), {
 
-  name,
-  phone,
-  location,
+  name: vendorName,
 
-  createdBy: user.email,
+  phone: vendorPhone,
 
-  searchCount: 0,
-
-  trustScore: 100,
+  location: vendorLocation,
 
   verified: false,
 
   banned: false,
 
-  createdAt: new Date()
+  trustScore: 100,
 
+  averageRating: 0,
+
+  searchCount: 0,
+
+  purchaseCodes: [],
+
+  createdBy: user.email,
+
+  createdAt: new Date()
 });
 
     showToast("Business added successfully ✔");
@@ -234,24 +239,41 @@ snap.forEach(async (docItem) => {
     typeof data.trustScore === "number"
       ? data.trustScore
       : Number(data.trustScore) || 100;
+result.innerHTML += `
+  <div class="card">
 
-  result.innerHTML += `
-    <div class="card">
+    <b>${data.name}</b><br/>
 
-      <b>${data.name}</b><br/>
+    ${data.phone}<br/><br/>
 
-      ${data.phone}<br/>
+    Trust Score: ${trustScore}%<br/>
 
-      Trust Score: ${trustScore}%<br/>
+    ⭐ Rating:
+    ${data.averageRating || 0}/10
+    <br/><br/>
 
-      ${
-        data.verified
-          ? "🟢 Verified"
-          : "⚪ Not Verified"
-      }
+    ${
+      data.verified
+        ? "🟢 Verified"
+        : "⚪ Not Verified"
+    }
 
-    </div>
-  `;
+    <br/><br/>
+
+    <button onclick="openReviewModal(
+      '${docItem.id}'
+    )">
+      Add Review
+    </button>
+
+    <button onclick="viewReviews(
+      '${docItem.id}'
+    )">
+      View Reviews
+    </button>
+
+  </div>
+`;
 });
 };
 window.reportScam = async function () {
@@ -925,4 +947,231 @@ window.banVendorFromReport = async function () {
   showToast("Vendor banned ✔");
 
   closeModal();
+};
+let currentVendorId = null;
+
+// OPEN MODAL
+window.openReviewModal = function (vendorId) {
+
+  currentVendorId = vendorId;
+
+  document.getElementById(
+    "reviewModal"
+  ).style.display = "flex";
+};
+
+// CLOSE MODAL
+window.closeReviewModal = function () {
+
+  document.getElementById(
+    "reviewModal"
+  ).style.display = "none";
+};
+window.submitReview = async function () {
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    showToast("Login required", "error");
+    return;
+  }
+
+  const rating = Number(
+    document.getElementById("reviewRating").value
+  );
+
+  const pros =
+    document.getElementById("reviewPros").value;
+
+  const cons =
+    document.getElementById("reviewCons").value;
+
+  const purchaseCode =
+    document.getElementById("purchaseCode").value.trim();
+
+  // =========================
+  // VERIFY PURCHASE CODE
+  // =========================
+  let verifiedPurchase = false;
+
+  if (purchaseCode) {
+
+    const vendorRef =
+      doc(db, "vendors", currentVendorId);
+
+    const vendorSnap =
+      await getDoc(vendorRef);
+
+    const vendorData =
+      vendorSnap.data();
+
+    const codes =
+      vendorData.purchaseCodes || [];
+
+    if (codes.includes(purchaseCode)) {
+      verifiedPurchase = true;
+    }
+  }
+
+  // =========================
+  // SAVE REVIEW (FIRESTORE)
+  // =========================
+  await addDoc(
+    collection(
+      db,
+      "vendors",
+      currentVendorId,
+      "reviews"
+    ),
+    {
+      userId: user.uid,
+      userEmail: user.email,
+
+      rating,
+      pros,
+      cons,
+
+      verifiedPurchase: verifiedPurchase,
+
+      createdAt: new Date()
+    }
+  );
+
+  showToast("Review submitted ✔");
+
+  closeReviewModal();
+};
+// ============================
+// VIEW REVIEWS
+// ============================
+window.viewReviews = async function (vendorId) {
+
+  const container =
+    document.getElementById("reviewsContainer");
+
+  container.innerHTML = "<p>Loading reviews...</p>";
+
+  document.getElementById("reviewsModal").style.display = "flex";
+
+  const snap = await getDocs(
+    collection(db, "vendors", vendorId, "reviews")
+  );
+
+  if (snap.empty) {
+    container.innerHTML = "<p>No reviews yet.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  let totalRating = 0;
+  let reviewCount = 0;
+
+  snap.forEach(docItem => {
+
+    const d = docItem.data();
+
+    totalRating += Number(d.rating || 0);
+    reviewCount++;
+
+    const div = document.createElement("div");
+    div.className = "result-card";
+
+    div.innerHTML = `
+      <h3>
+        ⭐ ${d.rating}/10
+        ${
+          d.verifiedPurchase
+            ? " ✅ Verified Purchase"
+            : ""
+        }
+      </h3>
+
+      <p>
+        <b>Pros:</b><br>
+        ${d.pros || "None"}
+      </p>
+
+      <br>
+
+      <p>
+        <b>Cons:</b><br>
+        ${d.cons || "None"}
+      </p>
+    `;
+
+    container.appendChild(div);
+  });
+
+  // update average rating
+  const avg = (totalRating / reviewCount).toFixed(1);
+
+  await updateDoc(
+    doc(db, "vendors", vendorId),
+    {
+      averageRating: Number(avg)
+    }
+  );
+};
+
+// ============================
+// CLOSE REVIEWS MODAL
+// ============================
+window.closeReviewsModal =
+  function () {
+
+    document.getElementById(
+      "reviewsModal"
+    ).style.display = "none";
+};
+// ============================
+// GENERATE PURCHASE CODE
+// ============================
+window.generatePurchaseCode =
+async function () {
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  // FIND VENDOR
+  const q = query(
+    collection(db, "vendors"),
+    where("createdBy", "==", user.email)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) return;
+
+  const vendorDoc =
+    snap.docs[0];
+
+  // RANDOM CODE
+  const code =
+    "VP-" +
+    Math.floor(
+      10000 + Math.random() * 90000
+    );
+
+  // GET CURRENT CODES
+  let data =
+    vendorDoc.data();
+
+  let codes =
+    data.purchaseCodes || [];
+
+  codes.push(code);
+
+  // UPDATE FIRESTORE
+  await updateDoc(
+    doc(db, "vendors", vendorDoc.id),
+    {
+      purchaseCodes: codes
+    }
+  );
+
+  showToast(
+    `Purchase code: ${code}`
+  );
 };
