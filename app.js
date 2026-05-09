@@ -365,7 +365,7 @@ let handler = PaystackPop.setup({
 
   email: email,
 
-  amount: 10000 * 100,
+  amount: 5000 * 100,
 
   currency: "NGN",
 
