@@ -41,6 +41,20 @@ const db = getFirestore(app);
 // ============================
 // PROFESSIONAL TOAST SYSTEM
 // ============================
+function getDeviceId() {
+
+  let deviceId = localStorage.getItem("deviceId");
+
+  if (!deviceId) {
+
+    deviceId = crypto.randomUUID();
+
+    localStorage.setItem("deviceId", deviceId);
+  }
+
+  return deviceId;
+}
+
 function getVendorStatus(trustScore) {
 
   if (trustScore >= 85) {
@@ -1125,86 +1139,71 @@ window.closeReviewModal = function () {
 window.submitReview = async function () {
 
   const user = auth.currentUser;
+  if (!user) return;
 
-  if (!user) {
-    showToast("Login required", "error");
+  const deviceId = getDeviceId();
+
+  const rating = Number(document.getElementById("reviewRating").value);
+  const pros = document.getElementById("reviewPros").value;
+  const cons = document.getElementById("reviewCons").value;
+
+  const purchaseCode = document.getElementById("purchaseCode").value.trim();
+
+  let verifiedPurchase = false;
+
+  // =========================
+  // DEVICE CHECK (YOUR CODE GOES HERE)
+  // =========================
+  const q = query(
+    collection(db, "vendors", currentVendorId, "reviews"),
+    where("deviceId", "==", deviceId)
+  );
+
+  const existing = await getDocs(q);
+
+  if (!existing.empty) {
+    showToast("You already reviewed this vendor", "warning");
     return;
   }
 
-  const rating = Number(
-    document.getElementById("reviewRating").value
-  );
-
-  const pros =
-    document.getElementById("reviewPros").value;
-
-  const cons =
-    document.getElementById("reviewCons").value;
-
-  const purchaseCode =
-    document.getElementById("purchaseCode").value.trim();
-
   // =========================
-  // VERIFY PURCHASE CODE
+  // PURCHASE CHECK
   // =========================
-  let verifiedPurchase = false;
-
   if (purchaseCode) {
 
-    const vendorRef =
-      doc(db, "vendors", currentVendorId);
+    const vendorRef = doc(db, "vendors", currentVendorId);
+    const vendorSnap = await getDoc(vendorRef);
+    const vendorData = vendorSnap.data();
 
-    const vendorSnap =
-      await getDoc(vendorRef);
+    const codes = vendorData.purchaseCodes || [];
 
-    const vendorData =
-      vendorSnap.data();
-
-    const codes =
-      vendorData.purchaseCodes || [];
-if (codes.includes(purchaseCode)) {
-
-  verifiedPurchase = true;
-
-  // REMOVE USED CODE
-  const updatedCodes =
-    codes.filter(
-      code => code !== purchaseCode
-    );
-
-  // UPDATE FIRESTORE
-  await updateDoc(vendorRef, {
-    purchaseCodes: updatedCodes
-  });
-}
+    if (codes.includes(purchaseCode)) {
+      verifiedPurchase = true;
+    }
   }
 
   // =========================
-  // SAVE REVIEW (FIRESTORE)
+  // SAVE REVIEW
   // =========================
   await addDoc(
-    collection(
-      db,
-      "vendors",
-      currentVendorId,
-      "reviews"
-    ),
+    collection(db, "vendors", currentVendorId, "reviews"),
     {
       userId: user.uid,
       userEmail: user.email,
+
+      deviceId, // important
 
       rating,
       pros,
       cons,
 
-      verifiedPurchase: verifiedPurchase,
+      verifiedPurchase,
 
       createdAt: new Date()
     }
   );
 
   showToast("Review submitted ✔");
-
   closeReviewModal();
 };
 // ============================
