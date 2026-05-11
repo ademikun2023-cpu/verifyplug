@@ -307,53 +307,132 @@ window.reportScam = async function () {
 
   const user = auth.currentUser;
 
-  if (!user) return;
+  if (!user) {
+    showToast("Login required", "error");
+    return;
+  }
 
-  let phone = document.getElementById("scamPhone").value;
-  let reason = document.getElementById("scamReason").value;
+  let phone =
+    document.getElementById("scamPhone").value;
+
+  let reason =
+    document.getElementById("scamReason").value;
 
   if (!phone || !reason) {
-    showToast("Fill all fields");
+
+    showToast(
+      "Fill all fields",
+      "warning"
+    );
+
     return;
   }
 
   try {
 
-    // 1. SAVE REPORT
-    await addDoc(collection(db, "scamReports"), {
+    // =========================
+    // SAVE SCAM REPORT
+    // =========================
+    await addDoc(
+      collection(db, "scamReports"),
+      {
 
-      reporterEmail: user.email,
-      phone: phone,
-      reason: reason,
-      createdAt: new Date()
+        reporterEmail: user.email,
 
-    });
+        phone: phone,
 
-    // 2. FIND VENDOR BY PHONE (IMPORTANT FIX)
+        reason: reason,
+
+        createdAt: new Date()
+      }
+    );
+
+    // =========================
+    // FIND VENDOR
+    // =========================
     const q = query(
       collection(db, "vendors"),
       where("phone", "==", phone)
     );
 
-    const snap = await getDocs(q);
+    const snap =
+      await getDocs(q);
 
     snap.forEach(async (docSnap) => {
 
-      const data = docSnap.data();
+      const data =
+        docSnap.data();
 
-      let currentScore = data.trustScore ?? 100;
+      let currentScore =
+        data.trustScore ?? 100;
 
-      // 3. REDUCE TRUST SCORE (-25 FIX)
-      await updateDoc(doc(db, "vendors", docSnap.id), {
-        trustScore: currentScore - 25
-      });
+      // =========================
+      // REDUCE TRUST SCORE
+      // =========================
+      let updatedScore =
+        currentScore - 25;
+
+      // PREVENT NEGATIVE VALUES
+      if (updatedScore < 0) {
+        updatedScore = 0;
+      }
+
+      // =========================
+      // VERIFIED BADGE LOGIC
+      // =========================
+      let verifiedStatus =
+        data.verified || false;
+
+      // REMOVE VERIFIED IF BELOW 50
+      if (updatedScore < 50) {
+        verifiedStatus = false;
+      }
+
+      // =========================
+      // AUTO BAN IF <= 20
+      // =========================
+      let bannedStatus =
+        data.banned || false;
+
+      if (updatedScore <= 20) {
+        bannedStatus = true;
+        verifiedStatus = false;
+      }
+
+      // =========================
+      // UPDATE FIRESTORE
+      // =========================
+      await updateDoc(
+        doc(db, "vendors", docSnap.id),
+        {
+          trustScore: updatedScore,
+
+          verified: verifiedStatus,
+
+          banned: bannedStatus
+        }
+      );
 
     });
 
-    showToast("Report submitted ✔");
+    showToast(
+      "Report submitted ✔",
+      "success"
+    );
+
+    // CLEAR INPUTS
+    document.getElementById("scamPhone").value = "";
+
+    document.getElementById("scamReason").value = "";
 
   } catch (err) {
+
     console.error(err);
+
+    showToast(
+      "Something went wrong",
+      "error"
+    );
   }
 };
 
@@ -1152,9 +1231,6 @@ window.viewReviews = async function (vendorId) {
   );
 };
 
-// ============================
-// CLOSE REVIEWS MODAL
-// ============================
 window.closeReviewsModal =
   function () {
 
@@ -1162,9 +1238,7 @@ window.closeReviewsModal =
       "reviewsModal"
     ).style.display = "none";
 };
-// ============================
-// GENERATE PURCHASE CODE
-// ============================
+
 window.generatePurchaseCode =
 async function () {
 
