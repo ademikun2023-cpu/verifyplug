@@ -41,7 +41,82 @@ const db = getFirestore(app);
 // ============================
 // PROFESSIONAL TOAST SYSTEM
 // ============================
+function getVendorStatus(trustScore) {
 
+  if (trustScore >= 85) {
+    return {
+      label: "Recommended Vendor ⭐",
+      className: "status-recommended"
+    };
+  }
+
+  if (trustScore >= 50) {
+    return {
+      label: "Normal Vendor",
+      className: "status-normal"
+    };
+  }
+
+  if (trustScore >= 21) {
+    return {
+      label: "Unverified Vendor ⚠️",
+      className: "status-weak"
+    };
+  }
+
+  return {
+    label: "Banned Vendor 🚫",
+    className: "status-banned"
+  };
+}
+function getVerifiedBadge(vendor) {
+
+  if (
+    vendor.verifiedPurchase === true &&
+    (vendor.trustScore ?? 100) >= 50
+  ) {
+    return "✅ Verified Purchase";
+  }
+
+  return "";
+}
+function filterVendors(vendors) {
+
+  return vendors.filter(v => {
+
+    const score = v.trustScore ?? 100;
+
+    // remove banned / very low trust
+    if (score <= 20) return false;
+
+    return true;
+  });
+
+}
+function sortVendors(vendors) {
+
+  return vendors.sort((a, b) => {
+
+    const scoreA = a.trustScore ?? 100;
+    const scoreB = b.trustScore ?? 100;
+
+    return scoreB - scoreA; // highest trust first
+  });
+
+}
+function renderEmptyState(container) {
+
+  container.innerHTML = `
+    <div style="
+      text-align:center;
+      opacity:0.6;
+      padding:20px;
+      font-size:14px;
+    ">
+      No vendors available yet.
+    </div>
+  `;
+}
 window.showToast = function (
   message,
   type = "success"
@@ -521,104 +596,94 @@ window.setStatus = function(isPaid) {
 window.loadVendorDashboard = async function () {
 
   const user = auth.currentUser;
-
   if (!user) return;
 
-  const q = query(
-    collection(db, "vendors"),
-    where("createdBy", "==", user.email)
-  );
+  try {
 
-  const snap = await getDocs(q);
+    // =========================
+    // FETCH
+    // =========================
+    const snap = await getDocs(collection(db, "vendors"));
 
-  // NO BUSINESS YET
-  if (snap.empty) {
+    const container = document.getElementById("vendorList");
+    if (!container) return;
 
-    document.getElementById("vendorForm").style.display = "block";
-    document.getElementById("vendorDashboard").style.display = "none";
+    container.innerHTML = "";
 
-    return;
-  }
+    // =========================
+    // BUILD ARRAY
+    // =========================
+    let vendors = [];
 
-  const vendorDoc = snap.docs[0];
-  const data = vendorDoc.data();
-
-  // =========================
-  // SAFE TRUST SCORE FIX
-  // =========================
-  const trustScore =
-    typeof data.trustScore === "number"
-      ? data.trustScore
-      : Number(data.trustScore) || 100;
-
-  const searchCount = data.searchCount || 0;
-
-  // =========================
-  // AUTO BAN SYSTEM 🔥
-  // =========================
-  if (trustScore <= 20 && data.banned !== true) {
-
-    await updateDoc(doc(db, "vendors", vendorDoc.id), {
-      banned: true,
-      verified: false
+    snap.forEach((docItem) => {
+      vendors.push({
+        id: docItem.id,
+        ...docItem.data()
+      });
     });
 
-    showToast("You have been banned due to low trust score");
+    // =========================
+    // FILTER
+    // =========================
+    vendors = filterVendors(vendors);
 
-    window.location.href = "index.html";
-    return;
+    // =========================
+    // SORT
+    // =========================
+    vendors = sortVendors(vendors);
+
+    // =========================
+    // EMPTY STATE
+    // =========================
+    if (vendors.length === 0) {
+      renderEmptyState(container);
+      return;
+    }
+
+    // =========================
+    // RENDER
+    // =========================
+    vendors.forEach((data) => {
+
+      const status = getVendorStatus(data.trustScore ?? 100);
+      const verifiedBadge = getVerifiedBadge(data);
+
+      const card = document.createElement("div");
+      card.className = "vendor-card";
+
+      card.innerHTML = `
+        <h3>${data.name}</h3>
+
+        <div class="badges">
+          <span class="${status.className}">
+            ${status.label}
+          </span>
+
+          ${verifiedBadge ? `
+            <span class="verified-badge">
+              ${verifiedBadge}
+            </span>
+          ` : ""}
+        </div>
+
+        <p>📞 ${data.phone || "No phone"}</p>
+
+        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
+
+        <p>🧾 ${data.location || "No location"}</p>
+
+        <button onclick="viewVendor('${data.id}')">
+          View Profile
+        </button>
+      `;
+
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    showToast("Failed to load vendors", "error");
   }
-
-  // =========================
-  // UI SWITCH
-  // =========================
-  document.getElementById("vendorForm").style.display = "none";
-  document.getElementById("vendorDashboard").style.display = "block";
-
-  // =========================
-  // NAME DISPLAY
-  // =========================
-  document.getElementById("welcomeText").innerText =
-    `Hi ${data.name} 👋`;
-
-  // =========================
-  // SEARCH COUNT
-  // =========================
-  document.getElementById("searchCount").innerText =
-    searchCount;
-
-  // =========================
-  // TRUST SCORE UI
-  // =========================
-  document.getElementById("trustFill").style.width =
-    trustScore + "%";
-
-  document.getElementById("trustText").innerText =
-    trustScore + "% Trusted";
-
-  // =========================
-  // VERIFIED STATUS
-  // =========================
-  const statusDot = document.getElementById("statusDot");
-  const statusText = document.getElementById("statusText");
-
-  if (data.verified) {
-
-    statusDot.classList.add("status-paid");
-    statusText.innerText = "Verified";
-
-  } else {
-
-    statusDot.classList.remove("status-paid");
-    statusText.innerText = "Not Verified";
-  }
-
-  // =========================
-  // PAYSTACK BUTTON
-  // =========================
-  document.getElementById("verifyBtn").onclick = function () {
-    payForVerification(vendorDoc.id, user.email);
-  };
 };
 // CUSTOMER DASHBOARD
 
@@ -700,99 +765,83 @@ onAuthStateChanged(auth, (user) => {
 window.loadVendorDashboard = async function () {
 
   const user = auth.currentUser;
-
   if (!user) return;
 
-  const q = query(
-    collection(db, "vendors"),
-    where("createdBy", "==", user.email)
-  );
+  try {
 
-  const snap = await getDocs(q);
+    // =========================
+    // FETCH VENDORS
+    // =========================
+    const snap = await getDocs(collection(db, "vendors"));
 
-  // NO BUSINESS YET
-  if (snap.empty) {
+    const container =
+      document.getElementById("vendorList");
 
-    document.getElementById("vendorForm").style.display = "block";
-    document.getElementById("vendorDashboard").style.display = "none";
-    document.getElementById("banScreen").style.display = "none";
+    if (!container) return;
 
-    return;
-  }
+    container.innerHTML = "";
 
-  const vendorDoc = snap.docs[0];
-  const data = vendorDoc.data();
+    // =========================
+    // LOOP VENDORS
+    // =========================
+    snap.forEach((docItem) => {
 
-  // SAFE DEFAULTS
-  const trustScore =
-    typeof data.trustScore === "number"
-      ? data.trustScore
-      : Number(data.trustScore) || 100;
+      const data = docItem.data();
 
-  // 🚨 STEP 1 — CHECK IF BANNED (PUT THIS FIRST)
-  if (data.banned === true) {
+      // =========================
+      // TRUST STATUS ENGINE
+      // =========================
+      const status =
+        getVendorStatus(data.trustScore ?? 100);
 
-    document.getElementById("banScreen").style.display = "block";
-    document.getElementById("vendorForm").style.display = "none";
-    document.getElementById("vendorDashboard").style.display = "none";
+      // =========================
+      // VERIFIED BADGE ENGINE
+      // =========================
+      const verifiedBadge =
+        getVerifiedBadge(data);
 
-    return;
-  }
+      // =========================
+      // CREATE CARD
+      // =========================
+      const card = document.createElement("div");
+      card.className = "vendor-card";
 
-  // 🚨 STEP 2 — AUTO BAN LOGIC (YOUR CODE GOES HERE)
-  if (trustScore <= 20 && data.banned !== true) {
+      card.innerHTML = `
+        <h3>${data.name}</h3>
 
-    await updateDoc(doc(db, "vendors", vendorDoc.id), {
-      banned: true,
-      verified: false
+        <div class="badges">
+          <span class="${status.className}">
+            ${status.label}
+          </span>
+
+          ${verifiedBadge ? `
+            <span class="verified-badge">
+              ${verifiedBadge}
+            </span>
+          ` : ""}
+        </div>
+
+        <p>📞 ${data.phone || "No phone"}</p>
+
+        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
+
+        <p>
+          🧾 ${data.location || "No location"}
+        </p>
+
+        <button onclick="viewVendor('${docItem.id}')">
+          View Profile
+        </button>
+
+      `;
+
+      container.appendChild(card);
     });
 
-    document.getElementById("banScreen").style.display = "block";
-    document.getElementById("vendorForm").style.display = "none";
-    document.getElementById("vendorDashboard").style.display = "none";
-
-    return;
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    showToast("Failed to load vendors", "error");
   }
-
-  // =========================
-  // SHOW NORMAL DASHBOARD
-  // =========================
-
-  document.getElementById("banScreen").style.display = "none";
-  document.getElementById("vendorForm").style.display = "none";
-  document.getElementById("vendorDashboard").style.display = "block";
-
-  // NAME
-  document.getElementById("welcomeText").innerText =
-    `Hi ${data.name} 👋`;
-
-  // SEARCH COUNT
-  document.getElementById("searchCount").innerText =
-    data.searchCount || 0;
-
-  // TRUST SCORE UI
-  document.getElementById("trustFill").style.width =
-    trustScore + "%";
-
-  document.getElementById("trustText").innerText =
-    trustScore + "% Trusted";
-
-  // VERIFIED STATUS
-  const statusDot = document.getElementById("statusDot");
-  const statusText = document.getElementById("statusText");
-
-  if (data.verified) {
-    statusDot.classList.add("status-paid");
-    statusText.innerText = "Verified";
-  } else {
-    statusDot.classList.remove("status-paid");
-    statusText.innerText = "Not Verified";
-  }
-
-  // PAYSTACK BUTTON
-  document.getElementById("verifyBtn").onclick = function () {
-    payForVerification(vendorDoc.id, user.email);
-  };
 };
 
 // ===============================

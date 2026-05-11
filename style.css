@@ -383,3 +383,43 @@ button:active {
 
   margin-top: 20px;
 }
+.status-recommended {
+  background: #1f9d55;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.status-normal {
+  background: #fbbf24;
+  color: black;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.status-weak {
+  background: #f97316;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.status-banned {
+  background: #dc2626;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.verified-badge {
+  background: #3b82f6;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-left: 5px;
+}
