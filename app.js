@@ -336,61 +336,142 @@ window.addVendor = async function () {
 
 // ================= SEARCH =================
 window.searchVendor = async () => {
-  const q = query(collection(db, "vendors"), where("phone", "==", searchInput.value));
+
+  const q = query(
+    collection(db, "vendors"),
+    where("phone", "==", searchInput.value)
+  );
+
   const snap = await getDocs(q);
+
   await trackVendorSearch();
+
   result.innerHTML = "";
 
-snap.forEach(async (docItem) => {
+  // =========================
+  // EMPTY SEARCH
+  // =========================
+  if (snap.empty) {
 
-  let data = docItem.data();
+    result.innerHTML = `
+      <div class="card">
 
-  // UPDATE SEARCH COUNT
-  await updateDoc(doc(db, "vendors", docItem.id), {
-    searchCount: increment(1)
+        <p>
+          No vendor found.
+        </p>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  // =========================
+  // LOOP RESULTS
+  // =========================
+  snap.forEach(async (docItem) => {
+
+    let data = docItem.data();
+
+    // =========================
+    // UPDATE SEARCH COUNT
+    // =========================
+    await updateDoc(
+      doc(db, "vendors", docItem.id),
+      {
+        searchCount: increment(1)
+      }
+    );
+
+    // =========================
+    // REAL TRUST SCORE
+    // =========================
+    const trustScore =
+      typeof data.trustScore === "number"
+        ? data.trustScore
+        : Number(data.trustScore) || 100;
+
+    // =========================
+    // STATUS ENGINE
+    // =========================
+    const status =
+      getVendorStatus(trustScore);
+
+    // =========================
+    // VERIFIED BADGE
+    // =========================
+    const verifiedBadge =
+      getVerifiedBadge(data);
+
+    // =========================
+    // RENDER CARD
+    // =========================
+    result.innerHTML += `
+
+      <div class="vendor-card">
+
+        <div class="vendor-header">
+
+          <h3>${data.name}</h3>
+
+          <div class="badges">
+
+            <span class="${status.className}">
+              ${status.label}
+            </span>
+
+            ${verifiedBadge ? `
+              <span class="verified-badge">
+                ${verifiedBadge}
+              </span>
+            ` : ""}
+
+          </div>
+
+        </div>
+
+        <div class="vendor-info">
+
+          <p>
+            📞 ${data.phone || "No phone"}
+          </p>
+
+          <p>
+            📊 Trust Score:
+            ${trustScore}%
+          </p>
+
+          <p>
+            ⭐ Rating:
+            ${data.averageRating || 0}/10
+          </p>
+
+          <p>
+            🧾 ${data.location || "No location"}
+          </p>
+
+        </div>
+
+        <div class="vendor-actions">
+
+          <button onclick="viewVendor('${docItem.id}')">
+            View Profile
+          </button>
+
+          <button onclick="openReviewModal('${docItem.id}')">
+            Add Review
+          </button>
+
+          <button onclick="viewReviews('${docItem.id}')">
+            View Reviews
+          </button>
+
+        </div>
+
+      </div>
+
+    `;
   });
-
-  // USE REAL TRUST SCORE
-  const trustScore =
-    typeof data.trustScore === "number"
-      ? data.trustScore
-      : Number(data.trustScore) || 100;
-result.innerHTML += `
-  <div class="card">
-
-    <b>${data.name}</b><br/>
-
-    ${data.phone}<br/><br/>
-
-    Trust Score: ${trustScore}%<br/>
-
-    ⭐ Rating:
-    ${data.averageRating || 0}/10
-    <br/><br/>
-
-    ${
-      data.verified
-        ? "🟢 Verified"
-        : "⚪ Not Verified"
-    }
-
-    <br/><br/>
-
-    <button onclick="openReviewModal(
-      '${docItem.id}'
-    )">
-      Add Review
-    </button>
-
-    <button onclick="viewReviews(
-      '${docItem.id}'
-    )">
-      View Reviews
-    </button>
-
-  </div>
-`;
-});
 };
 window.reportScam = async function () {
 
