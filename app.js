@@ -615,11 +615,15 @@ window.loadVendorDashboard = async function () {
   try {
 
     // =========================
-    // FETCH
+    // FETCH VENDORS
     // =========================
-    const snap = await getDocs(collection(db, "vendors"));
+    const snap = await getDocs(
+      collection(db, "vendors")
+    );
 
-    const container = document.getElementById("vendorList");
+    const container =
+      document.getElementById("vendorList");
+
     if (!container) return;
 
     container.innerHTML = "";
@@ -630,19 +634,21 @@ window.loadVendorDashboard = async function () {
     let vendors = [];
 
     snap.forEach((docItem) => {
+
       vendors.push({
         id: docItem.id,
         ...docItem.data()
       });
+
     });
 
     // =========================
-    // FILTER
+    // FILTER VENDORS
     // =========================
     vendors = filterVendors(vendors);
 
     // =========================
-    // SORT
+    // SORT BY TRUST
     // =========================
     vendors = sortVendors(vendors);
 
@@ -650,53 +656,116 @@ window.loadVendorDashboard = async function () {
     // EMPTY STATE
     // =========================
     if (vendors.length === 0) {
+
       renderEmptyState(container);
+
       return;
     }
 
     // =========================
-    // RENDER
+    // RENDER VENDORS
     // =========================
     vendors.forEach((data) => {
 
-      const status = getVendorStatus(data.trustScore ?? 100);
-      const verifiedBadge = getVerifiedBadge(data);
+      // STATUS ENGINE
+      const status =
+        getVendorStatus(
+          data.trustScore ?? 100
+        );
 
-      const card = document.createElement("div");
+      // VERIFIED BADGE
+      const verifiedBadge =
+        getVerifiedBadge(data);
+
+      // CREATE CARD
+      const card =
+        document.createElement("div");
+
       card.className = "vendor-card";
 
       card.innerHTML = `
-        <h3>${data.name}</h3>
 
-        <div class="badges">
-          <span class="${status.className}">
-            ${status.label}
-          </span>
+        <div class="vendor-header">
 
-          ${verifiedBadge ? `
-            <span class="verified-badge">
-              ${verifiedBadge}
+          <h3>${data.name}</h3>
+
+          <div class="badges">
+
+            <span class="${status.className}">
+              ${status.label}
             </span>
-          ` : ""}
+
+            ${verifiedBadge ? `
+              <span class="verified-badge">
+                ${verifiedBadge}
+              </span>
+            ` : ""}
+
+          </div>
+
         </div>
 
-        <p>📞 ${data.phone || "No phone"}</p>
+        <div class="vendor-info">
 
-        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
+          <p>
+            📞 ${data.phone || "No phone"}
+          </p>
 
-        <p>🧾 ${data.location || "No location"}</p>
+          <p>
+            📊 Trust Score:
+            ${data.trustScore ?? 100}%
+          </p>
 
-        <button onclick="viewVendor('${data.id}')">
-          View Profile
-        </button>
+          <p>
+            ⭐ Rating:
+            ${data.averageRating || 0}/10
+          </p>
+
+          <p>
+            🧾 ${data.location || "No location"}
+          </p>
+
+        </div>
+
+        <div class="vendor-actions">
+
+          <button
+            onclick="viewVendor('${data.id}')"
+          >
+            View Profile
+          </button>
+
+          <button
+            onclick="openReviewModal('${data.id}')"
+          >
+            Add Review
+          </button>
+
+          <button
+            onclick="viewReviews('${data.id}')"
+          >
+            View Reviews
+          </button>
+
+        </div>
+
       `;
 
       container.appendChild(card);
+
     });
 
   } catch (err) {
-    console.error("Dashboard error:", err);
-    showToast("Failed to load vendors", "error");
+
+    console.error(
+      "Dashboard error:",
+      err
+    );
+
+    showToast(
+      "Failed to load vendors",
+      "error"
+    );
   }
 };
 // CUSTOMER DASHBOARD
