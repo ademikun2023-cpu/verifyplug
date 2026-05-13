@@ -100,12 +100,14 @@ function filterVendors(vendors) {
 
     const score = v.trustScore ?? 100;
 
-    // remove banned / very low trust
+    // 🚫 remove banned vendors
+    if (v.banned === true) return false;
+
+    // remove very low trust
     if (score <= 20) return false;
 
     return true;
   });
-
 }
 function sortVendors(vendors) {
 
@@ -334,11 +336,11 @@ window.addVendor = async function () {
 // ================= SEARCH =================
 window.searchVendor = async () => {
 
-  const q = query(
-    collection(db, "vendors"),
-    where("phone", "==", searchInput.value)
-  );
-
+ const q = query(
+  collection(db, "vendors"),
+  where("phone", "==", searchInput.value),
+  where("banned", "==", false)
+);
   const snap = await getDocs(q);
 
   await trackVendorSearch();
@@ -366,10 +368,16 @@ window.searchVendor = async () => {
   // =========================
   // LOOP RESULTS
   // =========================
-  snap.forEach(async (docItem) => {
+ snap.forEach(async (docItem) => {
 
-    let data = docItem.data();
+  let data = docItem.data();
 
+  // =========================
+  // 🚫 BLOCK BANNED VENDORS
+  // =========================
+  if (data.banned === true) {
+    return; // skip rendering completely
+  }
     // =========================
     // UPDATE SEARCH COUNT
     // =========================
@@ -690,20 +698,8 @@ window.setStatus = function(isPaid) {
 
 window.loadVendorDashboard = async function () {
 
-  // =========================
-  // WAIT FOR AUTH SAFETY
-  // =========================
   const user = auth.currentUser;
-
-  if (!user) {
-    console.log("No user yet - retrying vendor dashboard...");
-
-    setTimeout(() => {
-      window.loadVendorDashboard();
-    }, 800);
-
-    return;
-  }
+  if (!user) return;
 
   try {
 
@@ -720,16 +716,10 @@ window.loadVendorDashboard = async function () {
     const container =
       document.getElementById("vendorDashboard");
 
-    const form =
-      document.getElementById("vendorForm");
-
-    if (!container) {
-      console.error("vendorDashboard container missing");
-      return;
-    }
+    if (!container) return;
 
     // =========================
-    // NO VENDOR FOUND
+    // NO VENDOR ACCOUNT
     // =========================
     if (snap.empty) {
 
@@ -742,35 +732,53 @@ window.loadVendorDashboard = async function () {
       return;
     }
 
-    // =========================
-    // GET VENDOR DATA
-    // =========================
-    const docItem = snap.docs[0];
-    const data = docItem.data();
-
-    const trustScore = data.trustScore ?? 100;
+    const vendor = snap.docs[0];
+    const data = vendor.data();
 
     // =========================
-    // STATUS + BADGE
+    // 🚫 BAN CHECK (NEW FIX)
     // =========================
-    const status = getVendorStatus(trustScore);
+    if (data.banned === true) {
+
+      document.body.innerHTML = `
+        <div style="
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          align-items:center;
+          height:100vh;
+          text-align:center;
+          font-family:sans-serif;
+        ">
+          <h1 style="color:red;">🚫 You have been banned</h1>
+          <p>Your vendor account has been restricted due to policy violations.</p>
+          <p>If you believe this is a mistake, contact support.</p>
+        </div>
+      `;
+
+      await auth.signOut();
+      return;
+    }
+
+    // =========================
+    // TRUST STATUS
+    // =========================
+    const status = getVendorStatus(data.trustScore ?? 100);
+
+    // =========================
+    // VERIFIED BADGE
+    // =========================
     const verifiedBadge = getVerifiedBadge(data);
 
     // =========================
-    // PURCHASE CODE LIMITS (20 / 60)
+    // PURCHASE CODE LIMITS
     // =========================
     const maxCodes = data.verified ? 60 : 20;
     const usedCodes = data.codesUsedThisMonth || 0;
     const remainingCodes = maxCodes - usedCodes;
 
     // =========================
-    // SHOW/HIDE UI
-    // =========================
-    if (form) form.style.display = "none";
-    container.style.display = "block";
-
-    // =========================
-    // RENDER DASHBOARD (FIXED WELCOME TEXT)
+    // RENDER DASHBOARD
     // =========================
     container.innerHTML = `
       <div class="vendor-owner-card">
@@ -793,30 +801,27 @@ window.loadVendorDashboard = async function () {
 
         <p>📞 ${data.phone || "No phone"}</p>
         <p>🧾 ${data.location || "No location"}</p>
-        <p>📊 Trust Score: ${trustScore}%</p>
+        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
         <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
         <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
 
-        <p>
-          🔑 Purchase Codes Remaining:
-          ${remainingCodes}/${maxCodes}
-        </p>
+        <p>🔑 Purchase Codes Remaining: ${remainingCodes}/${maxCodes}</p>
 
         <br>
 
         <div class="vendor-actions">
 
-          <button onclick="generatePurchaseCode('${docItem.id}')">
+          <button id="generateCodeBtn">
             Generate Purchase Code
           </button>
 
           ${!data.verified ? `
-            <button onclick="payForVerification('${docItem.id}', '${user.email}')">
+            <button id="verifyBtn">
               Get Verified
             </button>
           ` : ""}
 
-          <button onclick="viewReviews('${docItem.id}')">
+          <button id="viewReviewsBtn">
             View Reviews
           </button>
 
@@ -825,8 +830,29 @@ window.loadVendorDashboard = async function () {
       </div>
     `;
 
+    // =========================
+    // BUTTON FIXES (NO DUPLICATES)
+    // =========================
+
+    document.getElementById("generateCodeBtn").onclick =
+      () => generatePurchaseCode(vendor.id);
+
+    const viewBtn = document.getElementById("viewReviewsBtn");
+    if (viewBtn) {
+      viewBtn.onclick = () => viewReviews(vendor.id);
+    }
+
+    const verifyBtn = document.getElementById("verifyBtn");
+    if (verifyBtn) {
+      verifyBtn.onclick = () => {
+        payForVerification(vendor.id, user.email);
+      };
+    }
+
   } catch (err) {
+
     console.error("Vendor dashboard error:", err);
+
     showToast("Failed to load vendor dashboard", "error");
   }
 };
