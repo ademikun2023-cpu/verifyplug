@@ -698,13 +698,25 @@ window.setStatus = function(isPaid) {
 
 window.loadVendorDashboard = async function () {
 
+  // =========================
+  // WAIT FOR AUTH SAFETY
+  // =========================
   const user = auth.currentUser;
-  if (!user) return;
+
+  if (!user) {
+    console.log("No user yet - retrying vendor dashboard...");
+
+    setTimeout(() => {
+      window.loadVendorDashboard();
+    }, 800);
+
+    return;
+  }
 
   try {
 
     // =========================
-    // GET VENDOR DOC (STRICT)
+    // FIND VENDOR ACCOUNT
     // =========================
     const q = query(
       collection(db, "vendors"),
@@ -713,34 +725,41 @@ window.loadVendorDashboard = async function () {
 
     const snap = await getDocs(q);
 
-    const container = document.getElementById("vendorDashboard");
-    if (!container) return;
+    const container =
+      document.getElementById("vendorDashboard");
+
+    const form =
+      document.getElementById("vendorForm");
+
+    if (!container) {
+      console.error("vendorDashboard container missing");
+      return;
+    }
 
     // =========================
-    // NO ACCOUNT FOUND
+    // NO VENDOR FOUND
     // =========================
     if (snap.empty) {
+
       container.innerHTML = `
         <div class="card">
           <h3>No vendor business found</h3>
         </div>
       `;
+
       return;
     }
 
     // =========================
-    // FORCE FIRST VALID DOC
+    // GET VENDOR DATA
     // =========================
-    const vendorDoc = snap.docs[0];
-    const data = vendorDoc.data();
-    const vendorId = vendorDoc.id;
+    const docItem = snap.docs[0];
+    const data = docItem.data();
 
     // =========================
-    // 🚫 HARD BAN CHECK (FIXED LOGIC)
+    // 🚫 BAN SCREEN (ADDED ONLY)
     // =========================
     if (data.banned === true) {
-
-      await auth.signOut(); // IMPORTANT: sign out FIRST
 
       document.body.innerHTML = `
         <div style="
@@ -753,29 +772,38 @@ window.loadVendorDashboard = async function () {
           font-family:sans-serif;
         ">
           <h1 style="color:red;">🚫 You have been banned</h1>
-          <p>Your vendor account has been restricted.</p>
-          <p>Please contact support if this is a mistake.</p>
+          <p>Your vendor account has been restricted due to policy violations.</p>
+          <p>If you believe this is a mistake, contact support.</p>
         </div>
       `;
 
-      return; // STOP EVERYTHING
+      await auth.signOut();
+      return;
     }
+
+    const trustScore = data.trustScore ?? 100;
 
     // =========================
     // STATUS + BADGE
     // =========================
-    const status = getVendorStatus(data.trustScore ?? 100);
+    const status = getVendorStatus(trustScore);
     const verifiedBadge = getVerifiedBadge(data);
 
     // =========================
-    // PURCHASE LIMITS
+    // PURCHASE CODE LIMITS (20 / 60)
     // =========================
     const maxCodes = data.verified ? 60 : 20;
     const usedCodes = data.codesUsedThisMonth || 0;
     const remainingCodes = maxCodes - usedCodes;
 
     // =========================
-    // RENDER DASHBOARD
+    // SHOW/HIDE UI
+    // =========================
+    if (form) form.style.display = "none";
+    container.style.display = "block";
+
+    // =========================
+    // RENDER DASHBOARD (UNCHANGED)
     // =========================
     container.innerHTML = `
       <div class="vendor-owner-card">
@@ -798,27 +826,30 @@ window.loadVendorDashboard = async function () {
 
         <p>📞 ${data.phone || "No phone"}</p>
         <p>🧾 ${data.location || "No location"}</p>
-        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
+        <p>📊 Trust Score: ${trustScore}%</p>
         <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
         <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
 
-        <p>🔑 Purchase Codes Remaining: ${remainingCodes}/${maxCodes}</p>
+        <p>
+          🔑 Purchase Codes Remaining:
+          ${remainingCodes}/${maxCodes}
+        </p>
 
         <br>
 
         <div class="vendor-actions">
 
-          <button id="generateCodeBtn">
+          <button onclick="generatePurchaseCode('${docItem.id}')">
             Generate Purchase Code
           </button>
 
           ${!data.verified ? `
-            <button id="verifyBtn">
+            <button onclick="payForVerification('${docItem.id}', '${user.email}')">
               Get Verified
             </button>
           ` : ""}
 
-          <button id="viewReviewsBtn">
+          <button onclick="viewReviews('${docItem.id}')">
             View Reviews
           </button>
 
@@ -827,26 +858,9 @@ window.loadVendorDashboard = async function () {
       </div>
     `;
 
-    // =========================
-    // BUTTON HOOKS (SAFE)
-    // =========================
-    document.getElementById("generateCodeBtn").onclick =
-      () => generatePurchaseCode(vendorId);
-
-    const reviewBtn = document.getElementById("viewReviewsBtn");
-    if (reviewBtn) {
-      reviewBtn.onclick = () => viewReviews(vendorId);
-    }
-
-    const verifyBtn = document.getElementById("verifyBtn");
-    if (verifyBtn) {
-      verifyBtn.onclick = () => payForVerification(vendorId, user.email);
-    }
-
   } catch (err) {
-
-    console.error("Dashboard error:", err);
-    showToast("Failed to load dashboard", "error");
+    console.error("Vendor dashboard error:", err);
+    showToast("Failed to load vendor dashboard", "error");
   }
 };
 // CUSTOMER DASHBOARD
