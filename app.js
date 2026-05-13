@@ -185,7 +185,6 @@ window.login = async () => {
 
   try {
 
-    // LOGIN USER
     const userCred = await signInWithEmailAndPassword(
       auth,
       email,
@@ -194,18 +193,15 @@ window.login = async () => {
 
     const user = userCred.user;
 
-    // 🔥 ADMIN BYPASS
+    // ADMIN BYPASS
     if (user.email === "ademikun2023@gmail.com") {
-
-    showToast("Admin login successful ✔");
+      showToast("Admin login successful ✔");
       window.location.href = "admin.html";
       return;
     }
 
-    // NORMAL USER FLOW
     const userDoc = await getDoc(doc(db, "users", user.uid));
 
-    // if user doc missing
     if (!userDoc.exists()) {
       showToast("User profile not found");
       return;
@@ -213,7 +209,10 @@ window.login = async () => {
 
     const role = userDoc.data().role;
 
-    // ROUTE USERS
+    // IMPORTANT FIX:
+    // wait for auth state to settle before redirect UI breaks
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     if (role === "vendor") {
       window.location.href = "vendor.html";
     } else {
@@ -221,10 +220,8 @@ window.login = async () => {
     }
 
   } catch (err) {
-
     console.error(err);
     alert(err.message);
-
   }
 };
 window.addVendor = async function () {
@@ -925,14 +922,11 @@ onAuthStateChanged(auth, (user) => {
 // LOAD VENDOR PAGE
 // ===============================
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
 
-  if (
-    user &&
-    window.location.pathname.includes("vendor.html")
-  ) {
-
-    loadVendorDashboard();
+  if (window.location.pathname.includes("vendor.html")) {
+    await loadVendorDashboard();
   }
 });
 window.banVendor = async function (vendorId, email, phone, businessName) {
