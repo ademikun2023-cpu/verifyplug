@@ -1256,69 +1256,74 @@ window.viewReviews = async function (vendorId) {
   const container =
     document.getElementById("reviewsContainer");
 
-  container.innerHTML = "<p>Loading reviews...</p>";
+  const modal =
+    document.getElementById("reviewsModal");
 
-  document.getElementById("reviewsModal").style.display = "flex";
-
-  const snap = await getDocs(
-    collection(db, "vendors", vendorId, "reviews")
-  );
-
-  if (snap.empty) {
-    container.innerHTML = "<p>No reviews yet.</p>";
+  if (!container || !modal) {
+    console.error("Reviews modal missing in HTML");
+    showToast("Reviews UI missing", "error");
     return;
   }
 
-  container.innerHTML = "";
+  container.innerHTML = "<p>Loading reviews...</p>";
+  modal.style.display = "flex";
 
-  let totalRating = 0;
-  let reviewCount = 0;
+  try {
 
-  snap.forEach(docItem => {
+    const snap = await getDocs(
+      collection(db, "vendors", vendorId, "reviews")
+    );
 
-    const d = docItem.data();
-
-    totalRating += Number(d.rating || 0);
-    reviewCount++;
-
-    const div = document.createElement("div");
-    div.className = "result-card";
-
-    div.innerHTML = `
-      <h3>
-        ⭐ ${d.rating}/10
-        ${
-          d.verifiedPurchase
-            ? " ✅ Verified Purchase"
-            : ""
-        }
-      </h3>
-
-      <p>
-        <b>Pros:</b><br>
-        ${d.pros || "None"}
-      </p>
-
-      <br>
-
-      <p>
-        <b>Cons:</b><br>
-        ${d.cons || "None"}
-      </p>
-    `;
-
-    container.appendChild(div);
-  });
-
-  // update average rating
-  const avg = (totalRating / reviewCount).toFixed(1);
-
-  await updateDoc(
-    doc(db, "vendors", vendorId),
-    {
-      averageRating: Number(avg)
+    if (snap.empty) {
+      container.innerHTML = "<p>No reviews yet.</p>";
+      return;
     }
-  );
+
+    container.innerHTML = "";
+
+    let totalRating = 0;
+    let reviewCount = 0;
+
+    snap.forEach(docItem => {
+
+      const d = docItem.data();
+
+      totalRating += Number(d.rating || 0);
+      reviewCount++;
+
+      const div = document.createElement("div");
+      div.className = "result-card";
+
+      div.innerHTML = `
+        <h3>
+          ⭐ ${d.rating}/10
+          ${d.verifiedPurchase ? " ✅ Verified Purchase" : ""}
+        </h3>
+
+        <p><b>Pros:</b><br>${d.pros || "None"}</p>
+        <br>
+        <p><b>Cons:</b><br>${d.cons || "None"}</p>
+      `;
+
+      container.appendChild(div);
+    });
+
+    // prevent crash if no ratings
+    if (reviewCount > 0) {
+      const avg = (totalRating / reviewCount).toFixed(1);
+
+      await updateDoc(
+        doc(db, "vendors", vendorId),
+        {
+          averageRating: Number(avg)
+        }
+      );
+    }
+
+  } catch (err) {
+    console.error("View reviews error:", err);
+    showToast("Failed to load reviews", "error");
+  }
 };
 
 window.closeReviewsModal =
