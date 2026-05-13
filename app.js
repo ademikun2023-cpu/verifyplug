@@ -690,13 +690,25 @@ window.setStatus = function(isPaid) {
 
 window.loadVendorDashboard = async function () {
 
+  // =========================
+  // WAIT FOR AUTH SAFETY
+  // =========================
   const user = auth.currentUser;
-  if (!user) return;
+
+  if (!user) {
+    console.log("No user yet - retrying vendor dashboard...");
+
+    setTimeout(() => {
+      window.loadVendorDashboard();
+    }, 800);
+
+    return;
+  }
 
   try {
 
     // =========================
-    // GET VENDOR (OWN ACCOUNT)
+    // FIND VENDOR ACCOUNT
     // =========================
     const q = query(
       collection(db, "vendors"),
@@ -705,114 +717,65 @@ window.loadVendorDashboard = async function () {
 
     const snap = await getDocs(q);
 
-    // =========================
-    // CONTAINERS
-    // =========================
     const container =
-      document.getElementById("vendorList");
+      document.getElementById("vendorDashboard");
 
-    const ownerContainer =
-      document.getElementById("vendorOwnerDashboard");
+    const form =
+      document.getElementById("vendorForm");
 
-    if (container) container.innerHTML = "";
-    if (ownerContainer) ownerContainer.innerHTML = "";
+    if (!container) {
+      console.error("vendorDashboard container missing");
+      return;
+    }
 
     // =========================
     // NO VENDOR FOUND
     // =========================
     if (snap.empty) {
 
-      if (ownerContainer) {
-        ownerContainer.innerHTML = `
-          <div class="card">
-            <h3>No vendor business found</h3>
-          </div>
-        `;
-      }
+      container.innerHTML = `
+        <div class="card">
+          <h3>No vendor business found</h3>
+        </div>
+      `;
 
       return;
     }
 
     // =========================
-    // GET FIRST VENDOR DOC
+    // GET VENDOR DATA
     // =========================
     const docItem = snap.docs[0];
     const data = docItem.data();
 
     const trustScore = data.trustScore ?? 100;
 
+    // =========================
+    // STATUS + BADGE
+    // =========================
     const status = getVendorStatus(trustScore);
     const verifiedBadge = getVerifiedBadge(data);
 
+    // =========================
+    // PURCHASE CODE LIMITS (20 / 60)
+    // =========================
     const maxCodes = data.verified ? 60 : 20;
     const usedCodes = data.codesUsedThisMonth || 0;
     const remainingCodes = maxCodes - usedCodes;
 
     // =========================
-    // OWNER DASHBOARD VIEW (FIXED)
+    // SHOW/HIDE UI
     // =========================
-    if (ownerContainer) {
-
-      ownerContainer.innerHTML = `
-        <div class="vendor-owner-card">
-
-          <h2>Hi ${data.name} 👋</h2>
-
-          <div class="badges">
-            <span class="${status.className}">
-              ${status.label}
-            </span>
-
-            ${verifiedBadge ? `
-              <span class="verified-badge">
-                ${verifiedBadge}
-              </span>
-            ` : ""}
-          </div>
-
-          <br>
-
-          <p>📞 ${data.phone || "No phone"}</p>
-          <p>🧾 ${data.location || "No location"}</p>
-          <p>📊 Trust Score: ${trustScore}%</p>
-          <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
-          <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
-          <p>🔑 Purchase Codes Remaining: ${remainingCodes}/${maxCodes}</p>
-
-          <br>
-
-          <div class="vendor-actions">
-
-            <button onclick="generatePurchaseCode('${docItem.id}')">
-              Generate Purchase Code
-            </button>
-
-            ${!data.verified ? `
-              <button onclick="payForVerification('${docItem.id}', '${user.email}')">
-                Get Verified
-              </button>
-            ` : ""}
-
-            <button onclick="viewReviews('${docItem.id}')">
-              View Reviews
-            </button>
-
-          </div>
-
-        </div>
-      `;
-    }
+    if (form) form.style.display = "none";
+    container.style.display = "block";
 
     // =========================
-    // LIST VIEW (ADMIN / OTHER UI)
+    // RENDER DASHBOARD (FIXED WELCOME TEXT)
     // =========================
-    if (container) {
+    container.innerHTML = `
+      <div class="vendor-owner-card">
 
-      const card = document.createElement("div");
-      card.className = "vendor-card";
-
-      card.innerHTML = `
-        <h3>${data.name}</h3>
+        <h2>Hi ${data.name} 👋</h2>
 
         <div class="badges">
           <span class="${status.className}">
@@ -826,22 +789,44 @@ window.loadVendorDashboard = async function () {
           ` : ""}
         </div>
 
+        <br>
+
         <p>📞 ${data.phone || "No phone"}</p>
-        <p>📊 Trust Score: ${trustScore}%</p>
         <p>🧾 ${data.location || "No location"}</p>
+        <p>📊 Trust Score: ${trustScore}%</p>
+        <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
+        <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
 
-        <button onclick="viewVendor('${docItem.id}')">
-          View Profile
-        </button>
-      `;
+        <p>
+          🔑 Purchase Codes Remaining:
+          ${remainingCodes}/${maxCodes}
+        </p>
 
-      container.appendChild(card);
-    }
+        <br>
+
+        <div class="vendor-actions">
+
+          <button onclick="generatePurchaseCode('${docItem.id}')">
+            Generate Purchase Code
+          </button>
+
+          ${!data.verified ? `
+            <button onclick="payForVerification('${docItem.id}', '${user.email}')">
+              Get Verified
+            </button>
+          ` : ""}
+
+          <button onclick="viewReviews('${docItem.id}')">
+            View Reviews
+          </button>
+
+        </div>
+
+      </div>
+    `;
 
   } catch (err) {
-
     console.error("Vendor dashboard error:", err);
-
     showToast("Failed to load vendor dashboard", "error");
   }
 };
