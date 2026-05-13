@@ -1679,3 +1679,179 @@ window.generatePurchaseCode = async function (vendorId) {
     );
   }
 };
+window.loadVendorOwnerDashboard = async function () {
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  try {
+
+    // =========================
+    // FIND VENDOR ACCOUNT
+    // =========================
+    const q = query(
+      collection(db, "vendors"),
+      where("userId", "==", user.uid)
+    );
+
+    const snap = await getDocs(q);
+
+    const container =
+      document.getElementById(
+        "vendorOwnerDashboard"
+      );
+
+    if (!container) return;
+
+    // =========================
+    // NO VENDOR ACCOUNT
+    // =========================
+    if (snap.empty) {
+
+      container.innerHTML = `
+        <div class="card">
+
+          <h3>
+            No vendor business found
+          </h3>
+
+        </div>
+      `;
+
+      return;
+    }
+
+    // =========================
+    // GET VENDOR DATA
+    // =========================
+    const docItem =
+      snap.docs[0];
+
+    const data =
+      docItem.data();
+
+    // =========================
+    // TRUST STATUS
+    // =========================
+    const status =
+      getVendorStatus(
+        data.trustScore ?? 100
+      );
+
+    // =========================
+    // VERIFIED BADGE
+    // =========================
+    const verifiedBadge =
+      getVerifiedBadge(data);
+
+    // =========================
+    // PURCHASE CODE LIMITS
+    // =========================
+    const maxCodes =
+      data.verified ? 60 : 20;
+
+    const usedCodes =
+      data.codesUsedThisMonth || 0;
+
+    const remainingCodes =
+      maxCodes - usedCodes;
+
+    // =========================
+    // RENDER DASHBOARD
+    // =========================
+    container.innerHTML = `
+
+      <div class="vendor-owner-card">
+
+        <h2>
+          Hi ${data.name} 👋
+        </h2>
+
+        <div class="badges">
+
+          <span class="${status.className}">
+            ${status.label}
+          </span>
+
+          ${verifiedBadge ? `
+            <span class="verified-badge">
+              ${verifiedBadge}
+            </span>
+          ` : ""}
+
+        </div>
+
+        <br>
+
+        <p>
+          📞 ${data.phone || "No phone"}
+        </p>
+
+        <p>
+          🧾 ${data.location || "No location"}
+        </p>
+
+        <p>
+          📊 Trust Score:
+          ${data.trustScore ?? 100}%
+        </p>
+
+        <p>
+          ⭐ Average Rating:
+          ${data.averageRating || 0}/10
+        </p>
+
+        <p>
+          🔍 Searches This Week:
+          ${data.searchCount || 0}
+        </p>
+
+        <p>
+          🔑 Purchase Codes Remaining:
+          ${remainingCodes}/${maxCodes}
+        </p>
+
+        <br>
+
+        <div class="vendor-actions">
+
+          <button
+            onclick="generatePurchaseCode('${docItem.id}')"
+          >
+            Generate Purchase Code
+          </button>
+
+          ${!data.verified ? `
+            <button
+              onclick="payForVerification(
+                '${docItem.id}',
+                '${user.email}'
+              )"
+            >
+              Get Verified
+            </button>
+          ` : ""}
+
+          <button
+            onclick="viewReviews('${docItem.id}')"
+          >
+            View Reviews
+          </button>
+
+        </div>
+
+      </div>
+
+    `;
+
+  } catch (err) {
+
+    console.error(err);
+
+    showToast(
+      "Failed to load vendor dashboard",
+      "error"
+    );
+  }
+};
