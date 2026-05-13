@@ -607,120 +607,30 @@ window.reportScam = async function () {
 };
 
 // ================= PAYSTACK =================
-window.payForVerification = function (
-  vendorId,
-  email
-) {
+window.payForVerification = function (vendorId, email) {
+let handler = PaystackPop.setup({
 
-  let handler = PaystackPop.setup({
+  key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
 
-    key:
-      "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
+  email: email,
 
-    email: email,
+  amount: 5000 * 100,
 
-    amount: 5000 * 100,
+  currency: "NGN",
 
-    currency: "NGN",
+  callback: function (response) {
+    console.log("Payment success:", response);
 
-    callback: async function (response) {
+    // your verify logic here
+  },
 
-      try {
+  onClose: function () {
+    showToast("Payment cancelled");
+  }
 
-        console.log(
-          "Payment success:",
-          response
-        );
+});
 
-        // =========================
-        // GET VENDOR
-        // =========================
-        const vendorRef =
-          doc(db, "vendors", vendorId);
-
-        const vendorSnap =
-          await getDoc(vendorRef);
-
-        if (!vendorSnap.exists()) {
-
-          showToast(
-            "Vendor not found",
-            "error"
-          );
-
-          return;
-        }
-
-        const vendorData =
-          vendorSnap.data();
-
-        // =========================
-        // TRUST CHECK
-        // =========================
-        const trustScore =
-          vendorData.trustScore ?? 100;
-
-        // ONLY TRUSTED VENDORS
-        if (trustScore < 85) {
-
-          showToast(
-            "Vendor must have at least 85% trust score to become verified",
-            "warning"
-          );
-
-          return;
-        }
-
-        // =========================
-        // ACTIVATE PREMIUM
-        // =========================
-        await updateDoc(vendorRef, {
-
-          verified: true,
-
-          premiumActivatedAt:
-            new Date(),
-
-          premiumPaymentRef:
-            response.reference
-        });
-
-        // =========================
-        // SUCCESS
-        // =========================
-        showToast(
-          "Verification activated successfully ✔",
-          "success"
-        );
-
-        // OPTIONAL RELOAD
-        loadVendorDashboard();
-
-      } catch (err) {
-
-        console.error(err);
-
-        showToast(
-          "Verification failed",
-          "error"
-        );
-      }
-    },
-
-    // =========================
-    // PAYMENT CLOSED
-    // =========================
-    onClose: function () {
-
-      showToast(
-        "Payment cancelled",
-        "warning"
-      );
-    }
-
-  });
-
-  handler.openIframe();
+handler.openIframe();
 };
 // ================= ADMIN =================
 window.loadAdmin = async () => {
@@ -1527,155 +1437,51 @@ window.closeReviewsModal =
     ).style.display = "none";
 };
 
-window.generatePurchaseCode = async function (vendorId) {
+window.generatePurchaseCode =
+async function () {
 
-  try {
+  const user = auth.currentUser;
 
-    // =========================
-    // GET VENDOR
-    // =========================
-    const vendorRef =
-      doc(db, "vendors", vendorId);
+  if (!user) return;
 
-    const vendorSnap =
-      await getDoc(vendorRef);
+  // FIND VENDOR
+  const q = query(
+    collection(db, "vendors"),
+    where("createdBy", "==", user.email)
+  );
 
-    if (!vendorSnap.exists()) {
+  const snap = await getDocs(q);
 
-      showToast(
-        "Vendor not found",
-        "error"
-      );
+  if (snap.empty) return;
 
-      return;
-    }
+  const vendorDoc =
+    snap.docs[0];
 
-    const vendorData =
-      vendorSnap.data();
-
-    // =========================
-    // PREMIUM LIMITS
-    // =========================
-    const isPremium =
-      vendorData.isPremium === true;
-
-    const maxCodes =
-      isPremium ? 60 : 20;
-
-    // =========================
-    // MONTH CHECK
-    // =========================
-    const currentMonth =
-      new Date().getMonth();
-
-    const currentYear =
-      new Date().getFullYear();
-
-    let codesUsedThisMonth =
-      vendorData.codesUsedThisMonth || 0;
-
-    let lastCodeMonth =
-      vendorData.lastCodeMonth;
-
-    let lastCodeYear =
-      vendorData.lastCodeYear;
-
-    // RESET MONTHLY LIMIT
-    if (
-      lastCodeMonth !== currentMonth ||
-      lastCodeYear !== currentYear
-    ) {
-
-      codesUsedThisMonth = 0;
-
-      await updateDoc(vendorRef, {
-        codesUsedThisMonth: 0,
-        lastCodeMonth: currentMonth,
-        lastCodeYear: currentYear
-      });
-    }
-
-    // =========================
-    // LIMIT REACHED
-    // =========================
-    if (codesUsedThisMonth >= maxCodes) {
-
-      showToast(
-        `Monthly limit reached (${maxCodes})`,
-        "warning"
-      );
-
-      return;
-    }
-
-    // =========================
-    // GENERATE CODE
-    // =========================
-    const code =
-      Math.random()
-        .toString(36)
-        .substring(2, 10)
-        .toUpperCase();
-
-    // =========================
-    // EXPIRATION (48 HOURS)
-    // =========================
-    const expiresAt =
-      new Date(
-        Date.now() + 48 * 60 * 60 * 1000
-      );
-
-    // =========================
-    // SAVE CODE
-    // =========================
-    await addDoc(
-      collection(
-        db,
-        "vendors",
-        vendorId,
-        "purchaseCodes"
-      ),
-      {
-        code: code,
-
-        used: false,
-
-        createdAt: new Date(),
-
-        expiresAt: expiresAt
-      }
+  // RANDOM CODE
+  const code =
+    "VP-" +
+    Math.floor(
+      10000 + Math.random() * 90000
     );
 
-    // =========================
-    // UPDATE MONTH COUNT
-    // =========================
-    await updateDoc(vendorRef, {
+  // GET CURRENT CODES
+  let data =
+    vendorDoc.data();
 
-      codesUsedThisMonth:
-        increment(1),
+  let codes =
+    data.purchaseCodes || [];
 
-      lastCodeMonth:
-        currentMonth,
+  codes.push(code);
 
-      lastCodeYear:
-        currentYear
-    });
+  // UPDATE FIRESTORE
+  await updateDoc(
+    doc(db, "vendors", vendorDoc.id),
+    {
+      purchaseCodes: codes
+    }
+  );
 
-    // =========================
-    // SUCCESS
-    // =========================
-    showToast(
-      `Purchase code generated: ${code}`,
-      "success"
-    );
-
-  } catch (err) {
-
-    console.error(err);
-
-    showToast(
-      "Failed to generate code",
-      "error"
-    );
-  }
+  showToast(
+    `Purchase code: ${code}`
+  );
 };
