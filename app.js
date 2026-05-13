@@ -1019,85 +1019,188 @@ onAuthStateChanged(auth, (user) => {
 window.loadVendorDashboard = async function () {
 
   const user = auth.currentUser;
+
   if (!user) return;
 
-  try {
+  const q = query(
+    collection(db, "vendors"),
+    where("createdBy", "==", user.email)
+  );
+
+  const snap = await getDocs(q);
+
+  // =========================
+  // VENDOR EXISTS
+  // =========================
+  if (!snap.empty) {
+
+    const vendor =
+      snap.docs[0];
+
+    const data =
+      vendor.data();
 
     // =========================
-    // FETCH VENDORS
+    // HIDE FORM
     // =========================
-    const snap = await getDocs(collection(db, "vendors"));
-
-    const container =
-      document.getElementById("vendorList");
-
-    if (!container) return;
-
-    container.innerHTML = "";
+    document.getElementById(
+      "vendorForm"
+    ).style.display = "none";
 
     // =========================
-    // LOOP VENDORS
+    // SHOW DASHBOARD
     // =========================
-    snap.forEach((docItem) => {
+    document.getElementById(
+      "vendorDashboard"
+    ).style.display = "block";
 
-      const data = docItem.data();
+    // =========================
+    // WELCOME TEXT
+    // =========================
+    document.getElementById(
+      "welcomeText"
+    ).innerText =
+      `Hi ${data.name} 👋`;
 
-      // =========================
-      // TRUST STATUS ENGINE
-      // =========================
-      const status =
-        getVendorStatus(data.trustScore ?? 100);
+    // =========================
+    // TRUST SCORE
+    // =========================
+    const trustScore =
+      data.trustScore ?? 100;
 
-      // =========================
-      // VERIFIED BADGE ENGINE
-      // =========================
-      const verifiedBadge =
-        getVerifiedBadge(data);
+    document.getElementById(
+      "trustFill"
+    ).style.width =
+      trustScore + "%";
 
-      // =========================
-      // CREATE CARD
-      // =========================
-      const card = document.createElement("div");
-      card.className = "vendor-card";
+    document.getElementById(
+      "trustText"
+    ).innerText =
+      trustScore + "% Trusted";
 
-      card.innerHTML = `
-        <h3>${data.name}</h3>
+    // =========================
+    // SEARCHES
+    // =========================
+    document.getElementById(
+      "searchCount"
+    ).innerText =
+      data.searchCount || 0;
 
-        <div class="badges">
-          <span class="${status.className}">
-            ${status.label}
-          </span>
+    // =========================
+    // RATING
+    // =========================
+    document.getElementById(
+      "averageRating"
+    ).innerText =
+      `⭐ ${data.averageRating || 0}/10`;
 
-          ${verifiedBadge ? `
-            <span class="verified-badge">
-              ${verifiedBadge}
-            </span>
-          ` : ""}
-        </div>
+    // =========================
+    // STATUS SYSTEM
+    // =========================
+    const status =
+      getVendorStatus(trustScore);
 
-        <p>📞 ${data.phone || "No phone"}</p>
+    const statusEl =
+      document.getElementById(
+        "vendorStatus"
+      );
 
-        <p>📊 Trust Score: ${data.trustScore ?? 100}%</p>
+    statusEl.innerText =
+      status.label;
 
-        <p>
-          🧾 ${data.location || "No location"}
-        </p>
+    statusEl.className =
+      status.className;
 
-        <button onclick="viewVendor('${docItem.id}')">
-          View Profile
-        </button>
+    // =========================
+    // VERIFIED BADGE
+    // =========================
+    const verifiedBadge =
+      document.getElementById(
+        "verifiedBadge"
+      );
 
-      `;
+    if (data.verified) {
 
-      container.appendChild(card);
-    });
+      verifiedBadge.style.display =
+        "inline-block";
 
-  } catch (err) {
-    console.error("Dashboard error:", err);
-    showToast("Failed to load vendors", "error");
+      setStatus(true);
+
+    } else {
+
+      verifiedBadge.style.display =
+        "none";
+
+      setStatus(false);
+    }
+
+    // =========================
+    // PURCHASE CODE LIMITS
+    // =========================
+    const maxCodes =
+      data.verified ? 60 : 20;
+
+    const usedCodes =
+      data.codesUsedThisMonth || 0;
+
+    const remainingCodes =
+      maxCodes - usedCodes;
+
+    document.getElementById(
+      "purchaseCodesLeft"
+    ).innerText =
+      `${remainingCodes}/${maxCodes}`;
+
+    // =========================
+    // GENERATE CODE BUTTON
+    // =========================
+    document.getElementById(
+      "generateCodeBtn"
+    ).onclick = () => {
+
+      generatePurchaseCode(
+        vendor.id
+      );
+    };
+
+    // =========================
+    // VIEW REVIEWS BUTTON
+    // =========================
+    document.getElementById(
+      "viewReviewsBtn"
+    ).onclick = () => {
+
+      viewReviews(vendor.id);
+    };
+
+    // =========================
+    // VERIFY BUTTON
+    // =========================
+    const verifyBtn =
+      document.getElementById(
+        "verifyBtn"
+      );
+
+    if (data.verified) {
+
+      verifyBtn.style.display =
+        "none";
+
+    } else {
+
+      verifyBtn.style.display =
+        "inline-block";
+
+      verifyBtn.onclick = () => {
+
+        payForVerification(
+          vendor.id,
+          user.email
+        );
+      };
+    }
   }
 };
-
 // ===============================
 // LOAD VENDOR PAGE
 // ===============================
@@ -1679,7 +1782,6 @@ window.generatePurchaseCode = async function (vendorId) {
     );
   }
 };
-window.loadVendorOwnerDashboard = async function () {
 
   const user = auth.currentUser;
 
@@ -1854,4 +1956,3 @@ window.loadVendorOwnerDashboard = async function () {
       "error"
     );
   }
-};
