@@ -687,6 +687,9 @@ window.setStatus = function(isPaid) {
     text.innerText = "Not Verified";
   }
 };
+// ===============================
+// VENDOR DASHBOARD (FIXED + MERGED)
+// ===============================
 
 window.loadVendorDashboard = async function () {
 
@@ -696,82 +699,69 @@ window.loadVendorDashboard = async function () {
   try {
 
     // =========================
-    // FETCH VENDORS
+    // GET VENDOR (OWN ACCOUNT)
     // =========================
-    const snap = await getDocs(
-      collection(db, "vendors")
+    const q = query(
+      collection(db, "vendors"),
+      where("createdBy", "==", user.email)
     );
 
+    const snap = await getDocs(q);
+
+    // =========================
+    // CONTAINERS
+    // =========================
     const container =
       document.getElementById("vendorList");
 
-    if (!container) return;
+    const ownerContainer =
+      document.getElementById("vendorOwnerDashboard");
 
-    container.innerHTML = "";
-
-    // =========================
-    // BUILD ARRAY
-    // =========================
-    let vendors = [];
-
-    snap.forEach((docItem) => {
-
-      vendors.push({
-        id: docItem.id,
-        ...docItem.data()
-      });
-
-    });
+    if (container) container.innerHTML = "";
+    if (ownerContainer) ownerContainer.innerHTML = "";
 
     // =========================
-    // FILTER VENDORS
+    // NO VENDOR FOUND
     // =========================
-    vendors = filterVendors(vendors);
+    if (snap.empty) {
 
-    // =========================
-    // SORT BY TRUST
-    // =========================
-    vendors = sortVendors(vendors);
-
-    // =========================
-    // EMPTY STATE
-    // =========================
-    if (vendors.length === 0) {
-
-      renderEmptyState(container);
+      if (ownerContainer) {
+        ownerContainer.innerHTML = `
+          <div class="card">
+            <h3>No vendor business found</h3>
+          </div>
+        `;
+      }
 
       return;
     }
 
     // =========================
-    // RENDER VENDORS
+    // GET FIRST VENDOR DOC
     // =========================
-    vendors.forEach((data) => {
+    const docItem = snap.docs[0];
+    const data = docItem.data();
 
-      // STATUS ENGINE
-      const status =
-        getVendorStatus(
-          data.trustScore ?? 100
-        );
+    const trustScore = data.trustScore ?? 100;
 
-      // VERIFIED BADGE
-      const verifiedBadge =
-        getVerifiedBadge(data);
+    const status = getVendorStatus(trustScore);
+    const verifiedBadge = getVerifiedBadge(data);
 
-      // CREATE CARD
-      const card =
-        document.createElement("div");
+    const maxCodes = data.verified ? 60 : 20;
+    const usedCodes = data.codesUsedThisMonth || 0;
+    const remainingCodes = maxCodes - usedCodes;
 
-      card.className = "vendor-card";
+    // =========================
+    // OWNER DASHBOARD VIEW (FIXED)
+    // =========================
+    if (ownerContainer) {
 
-      card.innerHTML = `
+      ownerContainer.innerHTML = `
+        <div class="vendor-owner-card">
 
-        <div class="vendor-header">
-
-          <h3>${data.name}</h3>
+          <h2>Hi ${data.name} 👋</h2>
 
           <div class="badges">
-
             <span class="${status.className}">
               ${status.label}
             </span>
@@ -781,72 +771,81 @@ window.loadVendorDashboard = async function () {
                 ${verifiedBadge}
               </span>
             ` : ""}
+          </div>
+
+          <br>
+
+          <p>📞 ${data.phone || "No phone"}</p>
+          <p>🧾 ${data.location || "No location"}</p>
+          <p>📊 Trust Score: ${trustScore}%</p>
+          <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
+          <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
+          <p>🔑 Purchase Codes Remaining: ${remainingCodes}/${maxCodes}</p>
+
+          <br>
+
+          <div class="vendor-actions">
+
+            <button onclick="generatePurchaseCode('${docItem.id}')">
+              Generate Purchase Code
+            </button>
+
+            ${!data.verified ? `
+              <button onclick="payForVerification('${docItem.id}', '${user.email}')">
+                Get Verified
+              </button>
+            ` : ""}
+
+            <button onclick="viewReviews('${docItem.id}')">
+              View Reviews
+            </button>
 
           </div>
 
         </div>
+      `;
+    }
 
-        <div class="vendor-info">
+    // =========================
+    // LIST VIEW (ADMIN / OTHER UI)
+    // =========================
+    if (container) {
 
-          <p>
-            📞 ${data.phone || "No phone"}
-          </p>
+      const card = document.createElement("div");
+      card.className = "vendor-card";
 
-          <p>
-            📊 Trust Score:
-            ${data.trustScore ?? 100}%
-          </p>
+      card.innerHTML = `
+        <h3>${data.name}</h3>
 
-          <p>
-            ⭐ Rating:
-            ${data.averageRating || 0}/10
-          </p>
+        <div class="badges">
+          <span class="${status.className}">
+            ${status.label}
+          </span>
 
-          <p>
-            🧾 ${data.location || "No location"}
-          </p>
-
+          ${verifiedBadge ? `
+            <span class="verified-badge">
+              ${verifiedBadge}
+            </span>
+          ` : ""}
         </div>
 
-        <div class="vendor-actions">
+        <p>📞 ${data.phone || "No phone"}</p>
+        <p>📊 Trust Score: ${trustScore}%</p>
+        <p>🧾 ${data.location || "No location"}</p>
 
-          <button
-            onclick="viewVendor('${data.id}')"
-          >
-            View Profile
-          </button>
-
-          <button
-            onclick="openReviewModal('${data.id}')"
-          >
-            Add Review
-          </button>
-
-          <button
-            onclick="viewReviews('${data.id}')"
-          >
-            View Reviews
-          </button>
-
-        </div>
-
+        <button onclick="viewVendor('${docItem.id}')">
+          View Profile
+        </button>
       `;
 
       container.appendChild(card);
-
-    });
+    }
 
   } catch (err) {
 
-    console.error(
-      "Dashboard error:",
-      err
-    );
+    console.error("Vendor dashboard error:", err);
 
-    showToast(
-      "Failed to load vendors",
-      "error"
-    );
+    showToast("Failed to load vendor dashboard", "error");
   }
 };
 // CUSTOMER DASHBOARD
