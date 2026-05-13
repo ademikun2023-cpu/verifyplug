@@ -704,7 +704,7 @@ window.loadVendorDashboard = async function () {
   try {
 
     // =========================
-    // FIND VENDOR ACCOUNT
+    // GET VENDOR DOC (STRICT)
     // =========================
     const q = query(
       collection(db, "vendors"),
@@ -713,32 +713,34 @@ window.loadVendorDashboard = async function () {
 
     const snap = await getDocs(q);
 
-    const container =
-      document.getElementById("vendorDashboard");
-
+    const container = document.getElementById("vendorDashboard");
     if (!container) return;
 
     // =========================
-    // NO VENDOR ACCOUNT
+    // NO ACCOUNT FOUND
     // =========================
     if (snap.empty) {
-
       container.innerHTML = `
         <div class="card">
           <h3>No vendor business found</h3>
         </div>
       `;
-
       return;
     }
 
-    const vendor = snap.docs[0];
-    const data = vendor.data();
+    // =========================
+    // FORCE FIRST VALID DOC
+    // =========================
+    const vendorDoc = snap.docs[0];
+    const data = vendorDoc.data();
+    const vendorId = vendorDoc.id;
 
     // =========================
-    // 🚫 BAN CHECK (NEW FIX)
+    // 🚫 HARD BAN CHECK (FIXED LOGIC)
     // =========================
     if (data.banned === true) {
+
+      await auth.signOut(); // IMPORTANT: sign out FIRST
 
       document.body.innerHTML = `
         <div style="
@@ -751,27 +753,22 @@ window.loadVendorDashboard = async function () {
           font-family:sans-serif;
         ">
           <h1 style="color:red;">🚫 You have been banned</h1>
-          <p>Your vendor account has been restricted due to policy violations.</p>
-          <p>If you believe this is a mistake, contact support.</p>
+          <p>Your vendor account has been restricted.</p>
+          <p>Please contact support if this is a mistake.</p>
         </div>
       `;
 
-      await auth.signOut();
-      return;
+      return; // STOP EVERYTHING
     }
 
     // =========================
-    // TRUST STATUS
+    // STATUS + BADGE
     // =========================
     const status = getVendorStatus(data.trustScore ?? 100);
-
-    // =========================
-    // VERIFIED BADGE
-    // =========================
     const verifiedBadge = getVerifiedBadge(data);
 
     // =========================
-    // PURCHASE CODE LIMITS
+    // PURCHASE LIMITS
     // =========================
     const maxCodes = data.verified ? 60 : 20;
     const usedCodes = data.codesUsedThisMonth || 0;
@@ -831,29 +828,25 @@ window.loadVendorDashboard = async function () {
     `;
 
     // =========================
-    // BUTTON FIXES (NO DUPLICATES)
+    // BUTTON HOOKS (SAFE)
     // =========================
-
     document.getElementById("generateCodeBtn").onclick =
-      () => generatePurchaseCode(vendor.id);
+      () => generatePurchaseCode(vendorId);
 
-    const viewBtn = document.getElementById("viewReviewsBtn");
-    if (viewBtn) {
-      viewBtn.onclick = () => viewReviews(vendor.id);
+    const reviewBtn = document.getElementById("viewReviewsBtn");
+    if (reviewBtn) {
+      reviewBtn.onclick = () => viewReviews(vendorId);
     }
 
     const verifyBtn = document.getElementById("verifyBtn");
     if (verifyBtn) {
-      verifyBtn.onclick = () => {
-        payForVerification(vendor.id, user.email);
-      };
+      verifyBtn.onclick = () => payForVerification(vendorId, user.email);
     }
 
   } catch (err) {
 
-    console.error("Vendor dashboard error:", err);
-
-    showToast("Failed to load vendor dashboard", "error");
+    console.error("Dashboard error:", err);
+    showToast("Failed to load dashboard", "error");
   }
 };
 // CUSTOMER DASHBOARD
