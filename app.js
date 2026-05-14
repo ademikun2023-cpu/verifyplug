@@ -1367,51 +1367,137 @@ window.closeReviewsModal =
     ).style.display = "none";
 };
 
-window.generatePurchaseCode =
-async function () {
+window.generatePurchaseCode = async function (vendorId) {
 
-  const user = auth.currentUser;
+  try {
 
-  if (!user) return;
+    // =========================
+    // GET VENDOR
+    // =========================
+    const vendorRef = doc(db, "vendors", vendorId);
 
-  // FIND VENDOR
-  const q = query(
-    collection(db, "vendors"),
-    where("createdBy", "==", user.email)
-  );
+    const vendorSnap = await getDoc(vendorRef);
 
-  const snap = await getDocs(q);
+    if (!vendorSnap.exists()) {
+      showToast("Vendor not found", "error");
+      return;
+    }
 
-  if (snap.empty) return;
+    const vendorData = vendorSnap.data();
 
-  const vendorDoc =
-    snap.docs[0];
+    // =========================
+    // VERIFIED = 60
+    // NORMAL = 20
+    // =========================
+    const maxCodes =
+      vendorData.verified === true
+        ? 60
+        : 20;
 
-  // RANDOM CODE
-  const code =
-    "VP-" +
-    Math.floor(
-      10000 + Math.random() * 90000
+    // =========================
+    // CURRENT MONTH
+    // =========================
+    const now = new Date();
+
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // =========================
+    // SAVED MONTH DATA
+    // =========================
+    let codesUsed =
+      vendorData.codesUsedThisMonth || 0;
+
+    const savedMonth =
+      vendorData.lastCodeMonth;
+
+    const savedYear =
+      vendorData.lastCodeYear;
+
+    // =========================
+    // RESET NEW MONTH
+    // =========================
+    if (
+      savedMonth !== currentMonth ||
+      savedYear !== currentYear
+    ) {
+
+      codesUsed = 0;
+
+      await updateDoc(vendorRef, {
+        codesUsedThisMonth: 0,
+        lastCodeMonth: currentMonth,
+        lastCodeYear: currentYear
+      });
+    }
+
+    // =========================
+    // LIMIT CHECK
+    // =========================
+    if (codesUsed >= maxCodes) {
+
+      showToast(
+        `Monthly limit reached (${maxCodes})`,
+        "warning"
+      );
+
+      return;
+    }
+
+    // =========================
+    // GENERATE CODE
+    // =========================
+    const code =
+      "VP-" +
+      Math.floor(
+        10000 + Math.random() * 90000
+      );
+
+    // =========================
+    // GET CURRENT CODES
+    // =========================
+    let purchaseCodes =
+      vendorData.purchaseCodes || [];
+
+    purchaseCodes.push(code);
+
+    // =========================
+    // UPDATE FIRESTORE
+    // =========================
+    await updateDoc(vendorRef, {
+
+      purchaseCodes: purchaseCodes,
+
+      codesUsedThisMonth:
+        increment(1),
+
+      lastCodeMonth:
+        currentMonth,
+
+      lastCodeYear:
+        currentYear
+    });
+
+    // =========================
+    // SUCCESS
+    // =========================
+    showToast(
+      `Purchase code: ${code}`,
+      "success"
     );
 
-  // GET CURRENT CODES
-  let data =
-    vendorDoc.data();
+    // =========================
+    // RELOAD DASHBOARD
+    // =========================
+    loadVendorDashboard();
 
-  let codes =
-    data.purchaseCodes || [];
+  } catch (err) {
 
-  codes.push(code);
+    console.error(err);
 
-  // UPDATE FIRESTORE
-  await updateDoc(
-    doc(db, "vendors", vendorDoc.id),
-    {
-      purchaseCodes: codes
-    }
-  );
-
-  showToast(
-    `Purchase code: ${code}`
-  );
+    showToast(
+      "Failed to generate code",
+      "error"
+    );
+  }
 };
