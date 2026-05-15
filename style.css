@@ -1,46 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family: Inter, sans-serif;
 }
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(59,130,246,0.14), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(168,85,247,0.10), transparent 35%),
-    #050816;
+    radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(99,102,241,0.12), transparent 30%),
+    #060b16;
 
-  color: #e5e7eb;
+  color: #f8fafc;
   min-height: 100vh;
-
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* =========================
-   PREMIUM TYPOGRAPHY SCALE
-========================= */
-h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.8px; }
-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.6px; }
-h3 { font-size: 18px; font-weight: 600; }
-
-p {
-  font-size: 14.5px;
-  line-height: 1.7;
-  color: #cbd5e1;
-}
-
-/* =========================
-   TOPBAR (GLASS PREMIUM)
-========================= */
+/* TOPBAR */
 .topbar {
   width: 100%;
-  padding: 18px 28px;
+  padding: 20px 40px;
 
-  background: rgba(10, 15, 35, 0.55);
+  background: rgba(8, 15, 30, 0.85);
+
   border-bottom: 1px solid rgba(255,255,255,0.06);
 
   display: flex;
@@ -51,30 +32,75 @@ p {
   top: 0;
   z-index: 100;
 
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(18px);
 }
 
-/* =========================
-   PREMIUM CARD SYSTEM
-========================= */
+.topbar h1,
+.topbar h2,
+.topbar h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* MAIN CONTAINER */
+.container {
+  width: 100%;
+  max-width: 1250px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+/* CARD */
 .card,
 .vendor-card,
 .vendor-owner-card,
 .result-card,
 .admin-section {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  position: relative;
 
-  border-radius: 22px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.02)
+    );
 
-  padding: 22px;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-radius: 28px;
+
+  padding: 28px;
+
+  overflow: hidden;
 
   box-shadow:
-    0 20px 50px rgba(0,0,0,0.35);
+    0 10px 40px rgba(0,0,0,0.35);
 
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(16px);
 
-  transition: 0.25s ease;
+  transition: 0.28s ease;
+}
+
+.card::before,
+.vendor-card::before,
+.vendor-owner-card::before,
+.result-card::before,
+.admin-section::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(59,130,246,0.08),
+      transparent 35%
+    );
+
+  pointer-events: none;
 }
 
 .card:hover,
@@ -82,194 +108,453 @@ p {
 .vendor-owner-card:hover,
 .result-card:hover,
 .admin-section:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
 
-  border-color: rgba(59,130,246,0.35);
+  border-color: rgba(59,130,246,0.4);
 
   box-shadow:
-    0 25px 60px rgba(59,130,246,0.12);
+    0 18px 45px rgba(37,99,235,0.18);
 }
 
-/* subtle glow overlay */
-.card::before,
-.vendor-card::before,
-.vendor-owner-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    rgba(59,130,246,0.08),
-    transparent 40%
-  );
-  pointer-events: none;
+/* SPACING */
+.card,
+.vendor-card,
+.vendor-owner-card,
+.result-card {
+  margin-bottom: 22px;
 }
 
-/* =========================
-   INPUTS (MODERN APP STYLE)
-========================= */
+/* HEADINGS */
+h1,
+h2,
+h3 {
+  color: #ffffff;
+  margin-bottom: 14px;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 30px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+p {
+  color: #cbd5e1;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+/* INPUTS */
 input,
 textarea,
 select {
   width: 100%;
-  padding: 14px 16px;
 
-  border-radius: 14px;
+  margin-top: 14px;
+
+  padding: 16px 18px;
+
+  border-radius: 18px;
 
   border: 1px solid rgba(255,255,255,0.08);
 
-  background: rgba(10,15,35,0.7);
+  background: rgba(15,23,42,0.9);
+
   color: white;
 
   outline: none;
 
-  transition: 0.2s ease;
+  transition: 0.25s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255,255,255,0.45);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(59,130,246,0.6);
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.7);
+
+  box-shadow:
+    0 0 0 4px rgba(59,130,246,0.14);
+
+  background: rgba(15,23,42,1);
 }
 
-/* =========================
-   PREMIUM BUTTONS
-========================= */
+/* BUTTONS */
 button {
+  position: relative;
+
   width: 100%;
-  margin-top: 14px;
-  padding: 14px 16px;
+
+  margin-top: 18px;
+
+  padding: 15px 18px;
 
   border: none;
-  border-radius: 14px;
+  border-radius: 18px;
 
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #1d4ed8
+    );
 
   color: white;
+
+  font-size: 15px;
   font-weight: 600;
-  font-size: 14px;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  overflow: hidden;
+
+  transition: 0.25s ease;
+}
+
+button::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: -100%;
+
+  width: 100%;
+  height: 100%;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,0.22),
+      transparent
+    );
+
+  transition: 0.5s ease;
+}
+
+button:hover::before {
+  left: 100%;
 }
 
 button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 35px rgba(37,99,235,0.28);
+
+  box-shadow:
+    0 14px 30px rgba(37,99,235,0.35);
 }
 
-/* =========================
-   SEARCH UX (IMPORTANT)
-========================= */
+button:active {
+  transform: scale(0.98);
+}
+
+/* SEARCH INPUT ICON STYLE */
 .search-box {
   position: relative;
 }
 
 .search-box input {
-  padding-left: 44px;
+  padding-left: 48px;
 }
 
 .search-box::before {
   content: "🔍";
+
   position: absolute;
-  left: 14px;
+
   top: 50%;
+  left: 16px;
+
   transform: translateY(-50%);
+
   opacity: 0.7;
 }
 
-/* =========================
-   BADGES (CLEAN PREMIUM)
-========================= */
+/* BADGES */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
 .status-recommended,
 .status-normal,
 .status-weak,
 .status-banned,
-.status-trusted,
 .verified-badge {
-  padding: 6px 12px;
+  padding: 8px 14px;
+
   border-radius: 999px;
+
   font-size: 12px;
   font-weight: 600;
+
   border: 1px solid rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(10px);
 }
 
-.status-recommended { background: rgba(34,197,94,0.15); color: #4ade80; }
-.status-normal { background: rgba(250,204,21,0.15); color: #fde047; }
-.status-weak { background: rgba(249,115,22,0.15); color: #fb923c; }
-.status-banned { background: rgba(239,68,68,0.15); color: #f87171; }
-.status-trusted { background: rgba(59,130,246,0.15); color: #60a5fa; }
-.verified-badge { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+.status-recommended {
+  background: rgba(34,197,94,0.16);
+  color: #4ade80;
+}
 
-/* =========================
-   TRUST BAR (SMOOTH)
-========================= */
+.status-normal {
+  background: rgba(250,204,21,0.16);
+  color: #fde047;
+}
+
+.status-weak {
+  background: rgba(249,115,22,0.16);
+  color: #fb923c;
+}
+
+.status-banned {
+  background: rgba(239,68,68,0.16);
+  color: #f87171;
+}
+
+.verified-badge {
+  background: rgba(59,130,246,0.16);
+  color: #60a5fa;
+}
+
+/* TRUST BAR */
 .trust-bar {
-  height: 10px;
+  width: 100%;
+  height: 14px;
+
+  margin-top: 12px;
+
   background: rgba(255,255,255,0.06);
+
   border-radius: 999px;
+
   overflow: hidden;
 }
 
 .trust-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #22c55e);
-  transition: 0.4s ease;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #3b82f6,
+      #60a5fa,
+      #22c55e
+    );
+
+  transition: 0.35s ease;
 }
 
-/* =========================
-   MODAL (SOFT GLASS)
-========================= */
+/* STATUS */
+.status-wrapper {
+  position: fixed;
+
+  top: 22px;
+  right: 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px 18px;
+
+  background: rgba(8,15,30,0.9);
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-radius: 999px;
+
+  backdrop-filter: blur(14px);
+
+  z-index: 999;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+
+  border-radius: 50%;
+
+  background: #6b7280;
+}
+
+.status-dot.verified {
+  background: #22c55e;
+
+  box-shadow:
+    0 0 12px rgba(34,197,94,0.7);
+}
+
+/* ADMIN */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  padding: 20px 0;
+}
+
+/* MODAL */
 .modal {
+  display: none;
+
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
 
-  display: none;
+  background: rgba(2,6,23,0.7);
+
   justify-content: center;
   align-items: center;
 
-  backdrop-filter: blur(10px);
+  z-index: 2000;
+
+  backdrop-filter: blur(8px);
 }
 
 .modal-content {
   width: 92%;
-  max-width: 520px;
+  max-width: 560px;
 
-  background: rgba(10,15,35,0.9);
+  padding: 30px;
 
-  border-radius: 22px;
-  padding: 24px;
+  border-radius: 28px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15,23,42,0.95),
+      rgba(15,23,42,0.9)
+    );
 
   border: 1px solid rgba(255,255,255,0.08);
+
+  animation: popup 0.25s ease;
 }
 
-/* =========================
-   TOAST (PRO UX)
-========================= */
+@keyframes popup {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 14px;
+
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  margin-top: 0;
+}
+
+/* REVIEWS */
+#reviewsContainer {
+  max-height: 420px;
+  overflow-y: auto;
+
+  margin-top: 20px;
+
+  padding-right: 6px;
+}
+
+#reviewsContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+#reviewsContainer::-webkit-scrollbar-thumb {
+  background: rgba(59,130,246,0.5);
+  border-radius: 999px;
+}
+
+/* BAN SCREEN */
+#banScreen {
+  position: fixed;
+  inset: 0;
+
+  background:
+    radial-gradient(circle at top, rgba(239,68,68,0.14), transparent 35%),
+    #020617;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  z-index: 9999;
+
+  padding: 30px;
+}
+
+#banScreen h1 {
+  font-size: 46px;
+  color: #ef4444;
+  margin-bottom: 18px;
+}
+
+#banScreen p {
+  max-width: 520px;
+}
+
+/* TOAST */
 #toast {
   position: fixed;
-  top: 20px;
-  right: 20px;
 
-  padding: 14px 18px;
+  top: 24px;
+  right: 24px;
 
-  border-radius: 14px;
+  min-width: 280px;
+  max-width: 420px;
 
-  background: rgba(10,15,35,0.9);
-  border: 1px solid rgba(255,255,255,0.08);
+  padding: 18px 22px;
+
+  border-radius: 18px;
+
+  background: rgba(8,15,30,0.94);
 
   color: white;
 
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 16px 40px rgba(0,0,0,0.35);
+
+  backdrop-filter: blur(14px);
 
   opacity: 0;
-  transform: translateY(-10px);
+  pointer-events: none;
 
-  transition: 0.25s ease;
+  transform: translateY(-18px);
 
-  z-index: 99999;
+  transition: 0.3s ease;
+
+  z-index: 999999;
 }
 
 #toast.show {
@@ -277,17 +562,54 @@ button:hover {
   transform: translateY(0);
 }
 
-/* =========================
-   MOBILE CLEANUP
-========================= */
+#toast.success {
+  border-left: 5px solid #22c55e;
+}
+
+#toast.error {
+  border-left: 5px solid #ef4444;
+}
+
+#toast.warning {
+  border-left: 5px solid #f59e0b;
+}
+
+/* RESPONSIVE */
 @media (max-width: 900px) {
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 18px 18px;
+  }
+
+  .container {
+    padding: 22px 14px;
+  }
+
   .card,
   .vendor-card,
-  .vendor-owner-card {
-    padding: 18px;
+  .vendor-owner-card,
+  .result-card,
+  .admin-section {
+    padding: 22px;
+    border-radius: 24px;
   }
 
   h2 {
-    font-size: 22px;
+    font-size: 24px;
   }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+}
+.status-trusted {
+  background: #2563eb;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
 }
