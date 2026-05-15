@@ -199,41 +199,51 @@ window.goVendor = () => location.href = "vendor.html";
 // ================= AUTH =================
 window.signup = async () => {
 
-  let email = document.getElementById("emailInput").value;
-  let password = document.getElementById("passwordInput").value;
-  let role = document.getElementById("roleInput").value;
-
-  const passwordError = validatePassword(password);
-
-  if (passwordError) {
-    showToast(passwordError, "warning");
-    return;
-  }
+  const email = document.getElementById("emailInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  const role = document.getElementById("roleInput").value;
 
   try {
 
+    // =========================
+    // PASSWORD VALIDATION
+    // =========================
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      showToast(
+        "Password must be 8+ chars, include 1 uppercase & 1 special symbol",
+        "error"
+      );
+      return;
+    }
+
+    // =========================
+    // CREATE USER
+    // =========================
     const userCred =
       await createUserWithEmailAndPassword(auth, email, password);
 
-    const user = userCred.user;
-
     // =========================
-    // SEND EMAIL VERIFICATION
+    // SAVE USER ROLE
     // =========================
-    await sendEmailVerification(user);
-
-    // save user in firestore
-    await setDoc(doc(db, "users", user.uid), {
+    await setDoc(doc(db, "users", userCred.user.uid), {
       email,
       role,
-      verified: false
+      createdAt: new Date()
     });
 
-    showToast("Check your email to verify account ✔");
+    showToast("Account created ✔", "success");
 
-    // DO NOT redirect immediately
-    // force them to verify first
-    location.href = "verify.html";
+    // =========================
+    // ROUTE USER
+    // =========================
+    if (role === "vendor") {
+      window.location.href = "vendor.html";
+    } else {
+      window.location.href = "customer.html";
+    }
 
   } catch (e) {
     console.error(e);
@@ -243,48 +253,45 @@ window.signup = async () => {
 
 window.login = async () => {
 
-  let email = document.getElementById("emailInput").value;
-  let password = document.getElementById("passwordInput").value;
+  const email = document.getElementById("emailInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
 
   try {
 
-    const userCred = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    // =========================
+    // SIGN IN
+    // =========================
+    const userCred =
+      await signInWithEmailAndPassword(auth, email, password);
 
     const user = userCred.user;
 
+    // =========================
     // ADMIN BYPASS
+    // =========================
     if (user.email === "ademikun2023@gmail.com") {
-      showToast("Admin login successful ✔");
+      showToast("Admin login successful ✔", "success");
       window.location.href = "admin.html";
       return;
     }
 
-    const userDoc = await getDoc(doc(db, "users", user.uid));
+    // =========================
+    // GET USER ROLE
+    // =========================
+    const userSnap =
+      await getDoc(doc(db, "users", user.uid));
 
-    if (!userDoc.exists()) {
-      showToast("User profile not found");
+    if (!userSnap.exists()) {
+      showToast("User profile missing", "error");
       return;
     }
-    showToast("Login successful ✔");
-    const role = userDoc.data().role;
-    
-    const user = userCred.user;
 
-// check verification
-await user.reload();
+    const role = userSnap.data().role;
 
-if (!user.emailVerified) {
-  showToast("Please verify your email first", "warning");
-  return;
-}
-
-    // IMPORTANT FIX:
-    // wait for auth state to settle before redirect UI breaks
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // =========================
+    // ROUTING
+    // =========================
+    showToast("Login successful ✔", "success");
 
     if (role === "vendor") {
       window.location.href = "vendor.html";
