@@ -297,6 +297,21 @@ if (!user.emailVerified) {
     showToast(err.message, "error");
   }
 };
+window.checkVerification = async () => {
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  await user.reload();
+
+  if (user.emailVerified) {
+    showToast("Verified ✔");
+    location.href = "customer.html";
+  } else {
+    showToast("Still not verified", "warning");
+  }
+};
 window.addVendor = async function () {
 
   const user = auth.currentUser;
