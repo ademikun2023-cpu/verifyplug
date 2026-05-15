@@ -955,29 +955,32 @@ window.loadVendorDashboard = async function () {
     // =========================
     // SAFELY PICK FIRST VENDOR
     // =========================
-    const docItem = snap.docs[0];
-    const data = docItem.data();
-
     // =========================
-    // 🚫 BAN CHECK (SAFE RENDER INSTEAD OF WIPING DOM)
-    // =========================
-    if (data.banned === true) {
+// BAN CHECK (ROBUST)
+// =========================
+const docItem = snap.docs[0];
+const data = docItem.data();
 
-      container.innerHTML = `
-        <div class="card" style="text-align:center; padding:40px;">
-          <h1 style="color:#ef4444;">🚫 You have been banned</h1>
-          <p>Your vendor account has been restricted due to policy violations.</p>
-          <p>If you believe this is a mistake, contact support.</p>
+const isBanned = data?.banned === true;
 
-          <button onclick="auth.signOut()" style="margin-top:20px;">
-            Logout
-          </button>
-        </div>
-      `;
+if (isBanned) {
 
-      await auth.signOut();
-      return;
-    }
+  document.body.innerHTML = `
+    <div id="banScreen">
+      <h1>🚫 You have been banned</h1>
+      <p>
+        Your vendor account has been restricted due to policy violations.
+      </p>
+      <p>
+        Contact support if you believe this is a mistake.
+      </p>
+    </div>
+  `;
+
+  await auth.signOut();
+
+  return;
+}
 
     const trustScore = data.trustScore ?? 50;
 
