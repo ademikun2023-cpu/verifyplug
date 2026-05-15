@@ -225,32 +225,41 @@ window.signup = async () => {
     const userCred =
       await createUserWithEmailAndPassword(auth, email, password);
 
+    const user = userCred.user;
+
+    // =========================
+    // SEND EMAIL VERIFICATION
+    // =========================
+    await sendEmailVerification(user);
+
     // =========================
     // SAVE USER ROLE
     // =========================
-    await setDoc(doc(db, "users", userCred.user.uid), {
+    await setDoc(doc(db, "users", user.uid), {
       email,
       role,
       createdAt: new Date()
     });
 
-    showToast("Account created ✔", "success");
+    showToast(
+      "Verification email sent ✔ Check your inbox",
+      "success"
+    );
 
     // =========================
-    // ROUTE USER
+    // FORCE LOGOUT UNTIL VERIFIED
     // =========================
-    if (role === "vendor") {
-      window.location.href = "vendor.html";
-    } else {
-      window.location.href = "customer.html";
-    }
+    await auth.signOut();
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1500);
 
   } catch (e) {
     console.error(e);
     showToast(e.message, "error");
   }
 };
-
 window.login = async () => {
 
   const email = document.getElementById("emailInput").value.trim();
@@ -265,6 +274,21 @@ window.login = async () => {
       await signInWithEmailAndPassword(auth, email, password);
 
     const user = userCred.user;
+
+    // =========================
+    // EMAIL VERIFICATION CHECK
+    // =========================
+    if (!user.emailVerified) {
+
+      showToast(
+        "Please verify your email before logging in",
+        "warning"
+      );
+
+      await auth.signOut();
+
+      return;
+    }
 
     // =========================
     // ADMIN BYPASS
