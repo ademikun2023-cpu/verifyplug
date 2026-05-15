@@ -195,9 +195,14 @@ window.goVendor = () => location.href = "vendor.html";
 // ================= AUTH =================
 window.signup = async () => {
 
-  const email = document.getElementById("emailInput").value.trim();
-  const password = document.getElementById("passwordInput").value;
-  const role = document.getElementById("roleInput").value;
+  const email =
+    document.getElementById("emailInput").value.trim();
+
+  const password =
+    document.getElementById("passwordInput").value;
+
+  const role =
+    document.getElementById("roleInput").value;
 
   try {
 
@@ -228,13 +233,6 @@ window.signup = async () => {
       );
 
     // =========================
-    // SEND VERIFICATION EMAIL
-    // =========================
-    await sendEmailVerification(
-      userCred.user
-    );
-
-    // =========================
     // SAVE USER ROLE
     // =========================
     await setDoc(
@@ -242,17 +240,28 @@ window.signup = async () => {
       {
         email,
         role,
-        createdAt: new Date(),
-
-        // ONLY NEW USERS
-        requireEmailVerification: true
+        createdAt: new Date()
       }
     );
 
     showToast(
-      "Verification email sent ✔ Check your inbox",
+      "Account created ✔",
       "success"
     );
+
+    // =========================
+    // ROUTE USER
+    // =========================
+    if (role === "vendor") {
+
+      window.location.href =
+        "vendor.html";
+
+    } else {
+
+      window.location.href =
+        "customer.html";
+    }
 
   } catch (e) {
 
@@ -266,8 +275,11 @@ window.signup = async () => {
 };
 window.login = async () => {
 
-  const email = document.getElementById("emailInput").value.trim();
-  const password = document.getElementById("passwordInput").value;
+  const email =
+    document.getElementById("emailInput").value.trim();
+
+  const password =
+    document.getElementById("passwordInput").value;
 
   try {
 
@@ -275,67 +287,81 @@ window.login = async () => {
     // SIGN IN
     // =========================
     const userCred =
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
     const user = userCred.user;
 
     // =========================
-    // GET USER ROLE + DATA
-    // =========================
-    const userSnap =
-      await getDoc(doc(db, "users", user.uid));
-
-    if (!userSnap.exists()) {
-      showToast("User profile missing", "error");
-      return;
-    }
-
-    const userData = userSnap.data();
-
-    // =========================
-    // EMAIL VERIFICATION CHECK
-    // ONLY FOR NEW ACCOUNTS
+    // ADMIN BYPASS
     // =========================
     if (
-      userData.requireEmailVerification === true &&
-      !user.emailVerified
+      user.email ===
+      "ademikun2023@gmail.com"
     ) {
 
       showToast(
-        "Please verify your email before logging in",
-        "warning"
+        "Admin login successful ✔",
+        "success"
       );
 
-      await auth.signOut();
+      window.location.href =
+        "admin.html";
 
       return;
     }
 
     // =========================
-    // ADMIN BYPASS
+    // GET USER ROLE
     // =========================
-    if (user.email === "ademikun2023@gmail.com") {
-      showToast("Admin login successful ✔", "success");
-      window.location.href = "admin.html";
+    const userSnap =
+      await getDoc(
+        doc(db, "users", user.uid)
+      );
+
+    if (!userSnap.exists()) {
+
+      showToast(
+        "User profile missing",
+        "error"
+      );
+
       return;
     }
 
-    const role = userData.role;
+    const role =
+      userSnap.data().role;
 
     // =========================
     // ROUTING
     // =========================
-    showToast("Login successful ✔", "success");
+    showToast(
+      "Login successful ✔",
+      "success"
+    );
 
     if (role === "vendor") {
-      window.location.href = "vendor.html";
+
+      window.location.href =
+        "vendor.html";
+
     } else {
-      window.location.href = "customer.html";
+
+      window.location.href =
+        "customer.html";
     }
 
   } catch (err) {
+
     console.error(err);
-    showToast(err.message, "error");
+
+    showToast(
+      err.message,
+      "error"
+    );
   }
 };
 window.checkVerification = async () => {
