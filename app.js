@@ -94,7 +94,7 @@ function getVerifiedBadge(vendor) {
 
   if (
     vendor.verifiedPurchase === true &&
-    (vendor.trustScore ?? 100) >= 50
+    (vendor.trustScore ?? 50) >= 50
   ) {
     return "✅ Verified Purchase";
   }
@@ -105,7 +105,7 @@ function filterVendors(vendors) {
 
   return vendors.filter(v => {
 
-    const score = v.trustScore ?? 100;
+    const score = v.trustScore ?? 50;
 
     // 🚫 remove banned vendors
     if (v.banned === true) return false;
@@ -120,8 +120,8 @@ function sortVendors(vendors) {
 
   return vendors.sort((a, b) => {
 
-    const scoreA = a.trustScore ?? 100;
-    const scoreB = b.trustScore ?? 100;
+    const scoreA = a.trustScore ?? 50;
+    const scoreB = b.trustScore ?? 50;
 
     return scoreB - scoreA; // highest trust first
   });
@@ -401,7 +401,7 @@ window.searchVendor = async () => {
     const trustScore =
       typeof data.trustScore === "number"
         ? data.trustScore
-        : Number(data.trustScore) || 100;
+        : Number(data.trustScore) || 50;
 
     // =========================
     // STATUS ENGINE
@@ -546,7 +546,7 @@ window.reportScam = async function () {
         docSnap.data();
 
       let currentScore =
-        data.trustScore ?? 100;
+        data.trustScore ?? 50;
 
       // =========================
       // REDUCE TRUST SCORE
@@ -788,7 +788,7 @@ window.loadVendorDashboard = async function () {
       return;
     }
 
-    const trustScore = data.trustScore ?? 100;
+    const trustScore = data.trustScore ?? 50;
 
     // =========================
     // STATUS + BADGE
@@ -1035,7 +1035,7 @@ window.loadAdminDashboard = async function () {
     const trustScore =
       typeof d.trustScore === "number"
         ? d.trustScore
-        : Number(d.trustScore) || 100;
+        : Number(d.trustScore) || 50;
 
     const div = document.createElement("div");
 
