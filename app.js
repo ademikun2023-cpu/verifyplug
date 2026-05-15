@@ -37,7 +37,32 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+ 
+let vendorCache = null;
+let vendorCacheTime = 0;
 
+const CACHE_DURATION = 60 * 1000; // 1 minute
+async function getVendorsCached() {
+
+  const now = Date.now();
+
+  if (vendorCache && (now - vendorCacheTime < CACHE_DURATION)) {
+    return vendorCache;
+  }
+
+  const snap = await getDocs(collection(db, "vendors"));
+
+  const vendors = [];
+
+  snap.forEach(doc => {
+    vendors.push({ id: doc.id, ...doc.data() });
+  });
+
+  vendorCache = vendors;
+  vendorCacheTime = now;
+
+  return vendors;
+}
 // ============================
 // PROFESSIONAL TOAST SYSTEM
 // ============================
@@ -169,24 +194,33 @@ function renderEmptyState(container) {
     </div>
   `;
 }
-window.showToast = function (
-  message,
-  type = "success"
-) {
+let toastTimer = null;
 
-  const toast =
-    document.getElementById("toast");
+window.showToast = function (message, type = "success") {
 
-  toast.className = "";
+  const toast = document.getElementById("toast");
+  if (!toast) return;
 
-  toast.classList.add("show");
+  // clear previous timer (prevents stacking bugs)
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = null;
+  }
+
+  // reset classes efficiently
+  toast.className = "show";
   toast.classList.add(type);
 
-  toast.innerText = message;
+  // set message
+  toast.textContent = message;
 
-  setTimeout(() => {
+  // force reflow for smooth animation reset
+  toast.offsetHeight;
+
+  // auto hide
+  toastTimer = setTimeout(() => {
     toast.classList.remove("show");
-  }, 3200);
+  }, 2500);
 };
 // ================= ROUTING =================
 window.goCustomer = () => location.href = "customer.html";
@@ -205,6 +239,14 @@ window.signup = async () => {
     document.getElementById("roleInput").value;
 
   try {
+
+    // =========================
+    // QUICK EMPTY CHECK (FAST FAIL)
+    // =========================
+    if (!email || !password || !role) {
+      showToast("All fields are required", "error");
+      return;
+    }
 
     // =========================
     // PASSWORD VALIDATION
@@ -232,45 +274,57 @@ window.signup = async () => {
         password
       );
 
+    const user = userCred.user;
+
     // =========================
-    // SAVE USER ROLE
+    // SAVE USER ROLE (OPTIMIZED WRITE)
     // =========================
     await setDoc(
-      doc(db, "users", userCred.user.uid),
+      doc(db, "users", user.uid),
       {
         email,
         role,
-        createdAt: new Date()
+        createdAt: Date.now() // faster than new Date()
       }
     );
 
+    // =========================
+    // SUCCESS FEEDBACK FIRST
+    // =========================
     showToast(
       "Account created ✔",
       "success"
     );
 
     // =========================
-    // ROUTE USER
+    // SMALL DELAY FOR SMOOTHER UX
     // =========================
-    if (role === "vendor") {
+    setTimeout(() => {
 
-      window.location.href =
-        "vendor.html";
+      if (role === "vendor") {
+        window.location.href = "vendor.html";
+      } else {
+        window.location.href = "customer.html";
+      }
 
-    } else {
-
-      window.location.href =
-        "customer.html";
-    }
+    }, 400);
 
   } catch (e) {
 
     console.error(e);
 
-    showToast(
-      e.message,
-      "error"
-    );
+    // FIREBASE ERRORS CLEANER
+    let msg = e.message;
+
+    if (msg.includes("email-already-in-use")) {
+      msg = "Email already in use";
+    }
+
+    if (msg.includes("invalid-email")) {
+      msg = "Invalid email address";
+    }
+
+    showToast(msg, "error");
   }
 };
 window.login = async () => {
@@ -282,6 +336,14 @@ window.login = async () => {
     document.getElementById("passwordInput").value;
 
   try {
+
+    // =========================
+    // FAST EMPTY CHECK (NO FIREBASE CALL WASTE)
+    // =========================
+    if (!email || !password) {
+      showToast("Enter email and password", "error");
+      return;
+    }
 
     // =========================
     // SIGN IN
@@ -296,20 +358,18 @@ window.login = async () => {
     const user = userCred.user;
 
     // =========================
-    // ADMIN BYPASS
+    // ADMIN BYPASS (FAST PATH)
     // =========================
-    if (
-      user.email ===
-      "ademikun2023@gmail.com"
-    ) {
+    if (user.email === "ademikun2023@gmail.com") {
 
       showToast(
         "Admin login successful ✔",
         "success"
       );
 
-      window.location.href =
-        "admin.html";
+      setTimeout(() => {
+        window.location.href = "admin.html";
+      }, 300);
 
       return;
     }
@@ -318,16 +378,13 @@ window.login = async () => {
     // GET USER ROLE
     // =========================
     const userSnap =
-      await getDoc(
-        doc(db, "users", user.uid)
-      );
+      await getDoc(doc(db, "users", user.uid));
 
     if (!userSnap.exists()) {
 
-      showToast(
-        "User profile missing",
-        "error"
-      );
+      showToast("User profile missing", "error");
+
+      await auth.signOut(); // prevent ghost session
 
       return;
     }
@@ -336,47 +393,45 @@ window.login = async () => {
       userSnap.data().role;
 
     // =========================
-    // ROUTING
+    // SUCCESS FEEDBACK FIRST
     // =========================
-    showToast(
-      "Login successful ✔",
-      "success"
-    );
+    showToast("Login successful ✔", "success");
 
-    if (role === "vendor") {
+    // =========================
+    // SMOOTHER ROUTE TRANSITION
+    // =========================
+    setTimeout(() => {
 
-      window.location.href =
-        "vendor.html";
+      if (role === "vendor") {
+        window.location.href = "vendor.html";
+      } else {
+        window.location.href = "customer.html";
+      }
 
-    } else {
-
-      window.location.href =
-        "customer.html";
-    }
+    }, 300);
 
   } catch (err) {
 
     console.error(err);
 
-    showToast(
-      err.message,
-      "error"
-    );
-  }
-};
-window.checkVerification = async () => {
+    // =========================
+    // CLEAN ERROR MESSAGES
+    // =========================
+    let msg = err.message;
 
-  const user = auth.currentUser;
+    if (msg.includes("user-not-found")) {
+      msg = "Account not found";
+    }
 
-  if (!user) return;
+    if (msg.includes("wrong-password")) {
+      msg = "Incorrect password";
+    }
 
-  await user.reload();
+    if (msg.includes("invalid-email")) {
+      msg = "Invalid email format";
+    }
 
-  if (user.emailVerified) {
-    showToast("Verified ✔");
-    location.href = "customer.html";
-  } else {
-    showToast("Still not verified", "warning");
+    showToast(msg, "error");
   }
 };
 window.addVendor = async function () {
@@ -389,114 +444,112 @@ window.addVendor = async function () {
   }
 
   // =========================
-  // INPUT VALUES
+  // INPUT VALUES (TRIMMED FOR CLEAN DATA)
   // =========================
   const vendorName =
-    document.getElementById("vendorName").value;
+    document.getElementById("vendorName").value.trim();
 
   const vendorPhone =
-    document.getElementById("vendorPhone").value;
+    document.getElementById("vendorPhone").value.trim();
 
   const vendorLocation =
-    document.getElementById("vendorLocation").value;
+    document.getElementById("vendorLocation").value.trim();
 
   // =========================
   // VALIDATION
   // =========================
-  if (
-    !vendorName ||
-    !vendorPhone ||
-    !vendorLocation
-  ) {
-    showToast(
-      "Please fill all fields",
-      "warning"
-    );
+  if (!vendorName || !vendorPhone || !vendorLocation) {
+    showToast("Please fill all fields", "warning");
     return;
   }
 
   // =========================
-  // CHECK IF PHONE EXISTS
+  // PHONE FORMAT CLEANUP (OPTIONAL SPEED + CONSISTENCY)
+  // =========================
+  const cleanPhone = vendorPhone.replace(/\s+/g, "");
+
+  // =========================
+  // CHECK IF PHONE EXISTS (FAST EARLY EXIT)
   // =========================
   const q = query(
     collection(db, "vendors"),
-    where("phone", "==", vendorPhone)
+    where("phone", "==", cleanPhone)
   );
 
-  const existing =
-    await getDocs(q);
+  const existing = await getDocs(q);
 
   if (!existing.empty) {
-
-    showToast(
-      "Vendor already exists",
-      "error"
-    );
-
+    showToast("Vendor already exists", "error");
     return;
   }
 
   // =========================
-  // ADD VENDOR
+  // ADD VENDOR (OPTIMIZED WRITE)
   // =========================
   await addDoc(
     collection(db, "vendors"),
     {
 
       name: vendorName,
-
-      phone: vendorPhone,
-
+      phone: cleanPhone,
       location: vendorLocation,
 
       verified: false,
-
       banned: false,
 
-      trustScore: 50,
+      trustScore: 50, // your new baseline system
 
       averageRating: 0,
-
       searchCount: 0,
 
       purchaseCodes: [],
 
       createdBy: user.email,
 
-      createdAt: new Date()
+      createdAt: Date.now() // faster than new Date()
     }
   );
 
-  showToast(
-    "Business added successfully ✔"
-  );
+  // =========================
+  // UI FEEDBACK FIRST (FEELS FASTER)
+  // =========================
+  showToast("Business added successfully ✔", "success");
 
   // =========================
   // CLEAR INPUTS
   // =========================
   document.getElementById("vendorName").value = "";
-
   document.getElementById("vendorPhone").value = "";
-
   document.getElementById("vendorLocation").value = "";
 
   // =========================
-  // RELOAD DASHBOARD
+  // REFRESH DASHBOARD (NON-BLOCKING UX IMPROVEMENT)
   // =========================
-  loadVendorDashboard();
+  setTimeout(() => {
+    loadVendorDashboard();
+  }, 200);
 };
 
 // ================= SEARCH =================
 window.searchVendor = async () => {
 
- const q = query(
-  collection(db, "vendors"),
-  where("phone", "==", searchInput.value),
-  where("banned", "==", false)
-);
-  const snap = await getDocs(q);
+  const value = searchInput.value.trim();
 
-  await trackVendorSearch();
+  if (!value) {
+    showToast("Enter phone number", "error");
+    return;
+  }
+
+  // =========================
+  // QUERY (exclude banned vendors)
+  // =========================
+  const q = query(
+    collection(db, "vendors"),
+    where("phone", "==", value),
+    where("banned", "==", false)
+  );
+
+  const snap = await getDocs(q);
 
   result.innerHTML = "";
 
@@ -507,11 +560,7 @@ window.searchVendor = async () => {
 
     result.innerHTML = `
       <div class="card">
-
-        <p>
-          No vendor found.
-        </p>
-
+        <p>No vendor found.</p>
       </div>
     `;
 
@@ -519,53 +568,26 @@ window.searchVendor = async () => {
   }
 
   // =========================
-  // LOOP RESULTS
+  // BUILD HTML FIRST (FASTER RENDER)
   // =========================
- snap.forEach(async (docItem) => {
+  let html = "";
 
-  let data = docItem.data();
+  snap.forEach((docItem) => {
 
-  // =========================
-  // 🚫 BLOCK BANNED VENDORS
-  // =========================
-  if (data.banned === true) {
-    return; // skip rendering completely
-  }
-    // =========================
-    // UPDATE SEARCH COUNT
-    // =========================
-    await updateDoc(
-      doc(db, "vendors", docItem.id),
-      {
-        searchCount: increment(1)
-      }
-    );
+    const data = docItem.data();
 
     // =========================
-    // REAL TRUST SCORE
+    // SAFE TRUST SCORE
     // =========================
     const trustScore =
       typeof data.trustScore === "number"
         ? data.trustScore
         : Number(data.trustScore) || 50;
 
-    // =========================
-    // STATUS ENGINE
-    // =========================
-    const status =
-      getVendorStatus(trustScore);
+    const status = getVendorStatus(trustScore);
+    const verifiedBadge = getVerifiedBadge(data);
 
-    // =========================
-    // VERIFIED BADGE
-    // =========================
-    const verifiedBadge =
-      getVerifiedBadge(data);
-
-    // =========================
-    // RENDER CARD
-    // =========================
-    result.innerHTML += `
-
+    html += `
       <div class="vendor-card">
 
         <div class="vendor-header">
@@ -590,23 +612,13 @@ window.searchVendor = async () => {
 
         <div class="vendor-info">
 
-          <p>
-            📞 ${data.phone || "No phone"}
-          </p>
+          <p>📞 ${data.phone || "No phone"}</p>
 
-          <p>
-            📊 Trust Score:
-            ${trustScore}%
-          </p>
+          <p>📊 Trust Score: ${trustScore}%</p>
 
-          <p>
-            ⭐ Rating:
-            ${data.averageRating || 0}/10
-          </p>
+          <p>⭐ Rating: ${data.averageRating || 0}/10</p>
 
-          <p>
-            🧾 ${data.location || "No location"}
-          </p>
+          <p>🧾 ${data.location || "No location"}</p>
 
         </div>
 
@@ -627,9 +639,18 @@ window.searchVendor = async () => {
         </div>
 
       </div>
-
     `;
   });
+
+  // =========================
+  // RENDER ONCE (FAST)
+  // =========================
+  result.innerHTML = html;
+
+  // =========================
+  // TRACK SEARCH AFTER SUCCESS
+  // =========================
+  await trackVendorSearch();
 };
 window.reportScam = async function () {
 
@@ -793,19 +814,61 @@ handler.openIframe();
 // ================= ADMIN =================
 window.loadAdmin = async () => {
 
-  const vendors = await getDocs(collection(db, "vendors"));
-  adminList.innerHTML = "";
+  try {
 
-  vendors.forEach((docItem) => {
-    let data = docItem.data();
+    const adminList =
+      document.getElementById("adminList");
 
-    adminList.innerHTML += `
-      <div class="card">
-        ${data.name} - ${data.phone}
-        <button onclick="deleteVendor('${docItem.id}')">Delete</button>
-      </div>
-    `;
-  });
+    if (!adminList) return;
+
+    adminList.innerHTML = "<p>Loading vendors...</p>";
+
+    const snap = await getDocs(collection(db, "vendors"));
+
+    if (snap.empty) {
+      adminList.innerHTML = "<p>No vendors found.</p>";
+      return;
+    }
+
+    // =========================
+    // BUILD HTML FIRST (FAST)
+    // =========================
+    let html = "";
+
+    snap.forEach((docItem) => {
+
+      const data = docItem.data();
+
+      html += `
+        <div class="card">
+
+          <h3>${data.name || "No name"}</h3>
+
+          <p>📞 ${data.phone || "No phone"}</p>
+
+          <p>
+            ${data.banned ? "🚫 BANNED" : "🟢 ACTIVE"}
+          </p>
+
+          <button onclick="deleteVendor('${docItem.id}')">
+            Delete
+          </button>
+
+        </div>
+      `;
+    });
+
+    // =========================
+    // SINGLE DOM UPDATE (FAST)
+    // =========================
+    adminList.innerHTML = html;
+
+  } catch (err) {
+
+    console.error("Admin load error:", err);
+
+    showToast("Failed to load admin panel", "error");
+  }
 };
 
 window.deleteVendor = async (id) => {
@@ -851,26 +914,17 @@ window.setStatus = function(isPaid) {
 
 window.loadVendorDashboard = async function () {
 
-  // =========================
-  // WAIT FOR AUTH SAFETY
-  // =========================
   const user = auth.currentUser;
 
   if (!user) {
-    console.log("No user yet - retrying vendor dashboard...");
-
     setTimeout(() => {
       window.loadVendorDashboard();
-    }, 800);
-
+    }, 600);
     return;
   }
 
   try {
 
-    // =========================
-    // FIND VENDOR ACCOUNT
-    // =========================
     const q = query(
       collection(db, "vendors"),
       where("createdBy", "==", user.email)
@@ -884,49 +938,40 @@ window.loadVendorDashboard = async function () {
     const form =
       document.getElementById("vendorForm");
 
-    if (!container) {
-      console.error("vendorDashboard container missing");
-      return;
-    }
+    if (!container) return;
 
     // =========================
     // NO VENDOR FOUND
     // =========================
     if (snap.empty) {
-
       container.innerHTML = `
         <div class="card">
           <h3>No vendor business found</h3>
         </div>
       `;
-
       return;
     }
 
     // =========================
-    // GET VENDOR DATA
+    // SAFELY PICK FIRST VENDOR
     // =========================
     const docItem = snap.docs[0];
     const data = docItem.data();
 
     // =========================
-    // 🚫 BAN SCREEN (ADDED ONLY)
+    // 🚫 BAN CHECK (SAFE RENDER INSTEAD OF WIPING DOM)
     // =========================
     if (data.banned === true) {
 
-      document.body.innerHTML = `
-        <div style="
-          display:flex;
-          flex-direction:column;
-          justify-content:center;
-          align-items:center;
-          height:100vh;
-          text-align:center;
-          font-family:sans-serif;
-        ">
-          <h1 style="color:red;">🚫 You have been banned</h1>
+      container.innerHTML = `
+        <div class="card" style="text-align:center; padding:40px;">
+          <h1 style="color:#ef4444;">🚫 You have been banned</h1>
           <p>Your vendor account has been restricted due to policy violations.</p>
           <p>If you believe this is a mistake, contact support.</p>
+
+          <button onclick="auth.signOut()" style="margin-top:20px;">
+            Logout
+          </button>
         </div>
       `;
 
@@ -936,28 +981,16 @@ window.loadVendorDashboard = async function () {
 
     const trustScore = data.trustScore ?? 50;
 
-    // =========================
-    // STATUS + BADGE
-    // =========================
     const status = getVendorStatus(trustScore);
     const verifiedBadge = getVerifiedBadge(data);
 
-    // =========================
-    // PURCHASE CODE LIMITS (20 / 60)
-    // =========================
     const maxCodes = data.verified ? 60 : 20;
     const usedCodes = data.codesUsedThisMonth || 0;
     const remainingCodes = maxCodes - usedCodes;
 
-    // =========================
-    // SHOW/HIDE UI
-    // =========================
     if (form) form.style.display = "none";
     container.style.display = "block";
 
-    // =========================
-    // RENDER DASHBOARD (UNCHANGED)
-    // =========================
     container.innerHTML = `
       <div class="vendor-owner-card">
 
@@ -1025,26 +1058,41 @@ window.loadCustomerDashboard = async function () {
 
   if (!user) return;
 
+  try {
 
-  let name = user.email.split("@")[0];
+    // =========================
+    // SAFE NAME FALLBACK
+    // =========================
+    const name =
+      (user.email || "user").split("@")[0];
 
+    const welcomeText =
+      document.getElementById("welcomeText");
 
-  const welcomeText = document.getElementById("welcomeText");
+    if (welcomeText) {
+      welcomeText.innerText = `Hi ${name} 👋`;
+    }
 
-  if (welcomeText) {
-    welcomeText.innerText = `Hi ${name} 👋`;
-  }
+    // =========================
+    // GET USER DATA
+    // =========================
+    const userRef =
+      doc(db, "users", user.uid);
 
+    const userSnap =
+      await getDoc(userRef);
 
-  const userRef = doc(db, "users", user.uid);
+    if (!userSnap.exists()) return;
 
-  const userSnap = await getDoc(userRef);
+    const data = userSnap.data();
 
-  if (userSnap.exists()) {
-
-    let data = userSnap.data();
-
-    let searches = data.weeklySearches || 0;
+    // =========================
+    // SAFE SEARCH VALUE
+    // =========================
+    const searches =
+      typeof data.weeklySearches === "number"
+        ? data.weeklySearches
+        : Number(data.weeklySearches) || 0;
 
     const weeklySearches =
       document.getElementById("weeklySearches");
@@ -1052,6 +1100,10 @@ window.loadCustomerDashboard = async function () {
     if (weeklySearches) {
       weeklySearches.innerText = searches;
     }
+
+  } catch (err) {
+
+    console.error("Customer dashboard error:", err);
   }
 };
 
@@ -1123,97 +1175,114 @@ window.loadAdminDashboard = async function () {
   const vendorsBox =
     document.getElementById("vendorList");
 
+  // =========================
   // SAFETY CHECK
+  // =========================
   if (!reportsBox || !vendorsBox) {
     console.error("Admin containers missing");
     return;
   }
 
-  reportsBox.innerHTML = "";
-  vendorsBox.innerHTML = "";
-
   // =========================
-  // LOAD SCAM REPORTS
+  // LOADING STATE (UX IMPROVEMENT)
   // =========================
-  const reportsSnap =
-    await getDocs(collection(db, "scamReports"));
+  reportsBox.innerHTML = "<p>Loading reports...</p>";
+  vendorsBox.innerHTML = "<p>Loading vendors...</p>";
 
-  reportsSnap.forEach(docItem => {
+  try {
 
-    const d = docItem.data();
+    // =========================
+    // LOAD SCAM REPORTS
+    // =========================
+    const reportsSnap =
+      await getDocs(collection(db, "scamReports"));
 
-    const div = document.createElement("div");
+    let reportsHTML = "";
 
-    div.className = "card";
+    reportsSnap.forEach(docItem => {
 
-    div.innerHTML = `
-      <h3>🚨 Scam Report</h3>
+      const d = docItem.data();
 
-      <p><b>Phone:</b> ${d.phone}</p>
+      reportsHTML += `
+        <div class="card">
+          <h3>🚨 Scam Report</h3>
 
-      <p><b>Reason:</b> ${d.reason}</p>
+          <p><b>Phone:</b> ${d.phone || "N/A"}</p>
 
-      <p><b>By:</b> ${d.reporterEmail}</p>
+          <p><b>Reason:</b> ${d.reason || "N/A"}</p>
 
-      <button onclick="openReportModal(
-        '${docItem.id}',
-        '${d.phone}',
-        '${d.reason}',
-        '${d.reporterEmail}'
-      )">
-        View Report
-      </button>
-    `;
+          <p><b>By:</b> ${d.reporterEmail || "Unknown"}</p>
 
-    reportsBox.appendChild(div);
-  });
+          <button onclick="openReportModal(
+            '${docItem.id}',
+            '${d.phone || ""}',
+            '${d.reason || ""}',
+            '${d.reporterEmail || ""}'
+          )">
+            View Report
+          </button>
+        </div>
+      `;
+    });
 
-  // =========================
-  // LOAD VENDORS
-  // =========================
-  const vendorsSnap =
-    await getDocs(collection(db, "vendors"));
+    reportsBox.innerHTML =
+      reportsHTML || "<p>No reports found</p>";
 
-  vendorsSnap.forEach(docItem => {
+    // =========================
+    // LOAD VENDORS
+    // =========================
+    const vendorsSnap =
+      await getDocs(collection(db, "vendors"));
 
-    const d = docItem.data();
+    let vendorsHTML = "";
 
-    const trustScore =
-      typeof d.trustScore === "number"
-        ? d.trustScore
-        : Number(d.trustScore) || 50;
+    vendorsSnap.forEach(docItem => {
 
-    const div = document.createElement("div");
+      const d = docItem.data();
 
-    div.className = "card";
+      const trustScore =
+        typeof d.trustScore === "number"
+          ? d.trustScore
+          : Number(d.trustScore) || 50;
 
-    div.innerHTML = `
-      <h3>${d.name}</h3>
+      vendorsHTML += `
+        <div class="card">
 
-      <p>${d.phone}</p>
+          <h3>${d.name || "No name"}</h3>
 
-      <p>Trust Score: ${trustScore}%</p>
+          <p>${d.phone || "No phone"}</p>
 
-      <p>
-        ${
-          d.banned
-            ? "🚫 BANNED"
-            : "🟢 ACTIVE"
-        }
-      </p>
+          <p>Trust Score: ${trustScore}%</p>
 
-      <button onclick="banVendor(
-        '${docItem.id}',
-        '${d.createdBy}',
-        '${d.phone}',
-        '${d.name}'
-      )">
-        Ban Vendor
-      </button>
-    `;
+          <p>
+            ${d.banned ? "🚫 BANNED" : "🟢 ACTIVE"}
+          </p>
 
-    vendorsBox.appendChild(div);
-  });
+          <button onclick="banVendor(
+            '${docItem.id}',
+            '${d.createdBy || ""}',
+            '${d.phone || ""}',
+            '${d.name || ""}'
+          )">
+            Ban Vendor
+          </button>
+
+        </div>
+      `;
+    });
+
+    vendorsBox.innerHTML =
+      vendorsHTML || "<p>No vendors found</p>";
+
+  } catch (err) {
+    console.error("Admin dashboard error:", err);
+
+    reportsBox.innerHTML =
+      "<p>Error loading reports</p>";
+
+    vendorsBox.innerHTML =
+      "<p>Error loading vendors</p>";
+  }
 };
 onAuthStateChanged(auth, (user) => {
 
