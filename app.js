@@ -41,6 +41,35 @@ const db = getFirestore(app);
 // ============================
 // PROFESSIONAL TOAST SYSTEM
 // ============================
+function validatePassword(password) {
+
+  // at least 8 chars
+  const lengthCheck =
+    password.length >= 8;
+
+  // at least 1 uppercase
+  const capsCheck =
+    /[A-Z]/.test(password);
+
+  // at least 1 special symbol
+  const symbolCheck =
+    /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  if (!lengthCheck) {
+    return "Password must be at least 8 characters";
+  }
+
+  if (!capsCheck) {
+    return "Password must contain at least 1 uppercase letter";
+  }
+
+  if (!symbolCheck) {
+    return "Password must contain at least 1 special symbol";
+  }
+
+  return null;
+}
+
 function getDeviceId() {
 
   let deviceId = localStorage.getItem("deviceId");
@@ -165,25 +194,59 @@ window.goVendor = () => location.href = "vendor.html";
 
 // ================= AUTH =================
 window.signup = async () => {
-  let email = document.getElementById("emailInput").value;
-  let password = document.getElementById("passwordInput").value;
-  let role = document.getElementById("roleInput").value;
+
+  let email =
+    document.getElementById("emailInput").value;
+
+  let password =
+    document.getElementById("passwordInput").value;
+
+  let role =
+    document.getElementById("roleInput").value;
+
+  // =========================
+  // PASSWORD VALIDATION
+  // =========================
+  const passwordError =
+    validatePassword(password);
+
+  if (passwordError) {
+
+    showToast(passwordError, "warning");
+
+    return;
+  }
 
   try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
 
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      email,
-      role
-    });
+    const userCred =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
+    await setDoc(
+      doc(db, "users", userCred.user.uid),
+      {
+        email,
+        role
+      }
+    );
+
+    showToast(
+      "Account created successfully ✔"
+    );
 
     role === "vendor"
       ? location.href = "vendor.html"
       : location.href = "customer.html";
 
   } catch (e) {
-    alert(e.message);
+
+    console.error(e);
+
+    showToast(e.message, "error");
   }
 };
 
@@ -215,7 +278,7 @@ window.login = async () => {
       showToast("User profile not found");
       return;
     }
-
+    showToast("Login successful ✔");
     const role = userDoc.data().role;
 
     // IMPORTANT FIX:
@@ -230,7 +293,7 @@ window.login = async () => {
 
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    showToast(err.message, "error");
   }
 };
 window.addVendor = async function () {
