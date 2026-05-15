@@ -57,10 +57,17 @@ function getDeviceId() {
 
 function getVendorStatus(trustScore) {
 
-  if (trustScore >= 85) {
+  if (trustScore >= 90) {
     return {
-      label: "Recommended Vendor ⭐",
+      label: "Highly Recommended ⭐",
       className: "status-recommended"
+    };
+  }
+
+  if (trustScore >= 70) {
+    return {
+      label: "Trusted Vendor ✅",
+      className: "status-trusted"
     };
   }
 
@@ -73,7 +80,7 @@ function getVendorStatus(trustScore) {
 
   if (trustScore >= 21) {
     return {
-      label: "Unverified Vendor ⚠️",
+      label: "Risky Vendor ⚠️",
       className: "status-weak"
     };
   }
@@ -300,7 +307,7 @@ window.addVendor = async function () {
 
       banned: false,
 
-      trustScore: 100,
+      trustScore: 50,
 
       averageRating: 0,
 
@@ -1241,9 +1248,7 @@ window.submitReview = async function () {
     return;
   }
 
-  // =========================
-  // PURCHASE CHECK
-  // =========================
+
   if (purchaseCode) {
 
     const vendorRef = doc(db, "vendors", currentVendorId);
@@ -1257,17 +1262,15 @@ window.submitReview = async function () {
     }
   }
 
-  // =========================
-  // SAVE REVIEW
-  // =========================
+
   await addDoc(
     collection(db, "vendors", currentVendorId, "reviews"),
     {
       userId: user.uid,
       userEmail: user.email,
 
-      deviceId, // important
-
+      deviceId, // clear
+ 
       rating,
       pros,
       cons,

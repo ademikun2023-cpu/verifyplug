@@ -606,3 +606,10 @@ button:active {
     flex-direction: column;
   }
 }
+.status-trusted {
+  background: #2563eb;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
