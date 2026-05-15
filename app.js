@@ -4,16 +4,12 @@ where
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
-  sendEmailVerification
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
 import {
   getFirestore,
   collection,
@@ -212,10 +208,12 @@ window.signup = async () => {
       /^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
 
     if (!passwordRegex.test(password)) {
+
       showToast(
         "Password must be 8+ chars, include 1 uppercase & 1 special symbol",
         "error"
       );
+
       return;
     }
 
@@ -223,44 +221,47 @@ window.signup = async () => {
     // CREATE USER
     // =========================
     const userCred =
-      await createUserWithEmailAndPassword(auth, email, password);
-
-    const user = userCred.user;
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
     // =========================
-    // SEND EMAIL VERIFICATION
+    // SEND VERIFICATION EMAIL
     // =========================
-    await sendEmailVerification(user);
+    await sendEmailVerification(
+      userCred.user
+    );
 
     // =========================
     // SAVE USER ROLE
     // =========================
-await setDoc(doc(db, "users", user.uid), {
-  email,
-  role,
-  createdAt: new Date(),
+    await setDoc(
+      doc(db, "users", userCred.user.uid),
+      {
+        email,
+        role,
+        createdAt: new Date(),
 
-  // NEW SYSTEM
-  requireEmailVerification: true
-});
+        // ONLY NEW USERS
+        requireEmailVerification: true
+      }
+    );
 
     showToast(
       "Verification email sent ✔ Check your inbox",
       "success"
     );
 
-    // =========================
-    // FORCE LOGOUT UNTIL VERIFIED
-    // =========================
-    await auth.signOut();
-
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 1500);
-
   } catch (e) {
+
     console.error(e);
-    showToast(e.message, "error");
+
+    showToast(
+      e.message,
+      "error"
+    );
   }
 };
 window.login = async () => {
