@@ -4,6 +4,10 @@ where
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
+  sendEmailVerification
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -195,57 +199,44 @@ window.goVendor = () => location.href = "vendor.html";
 // ================= AUTH =================
 window.signup = async () => {
 
-  let email =
-    document.getElementById("emailInput").value;
+  let email = document.getElementById("emailInput").value;
+  let password = document.getElementById("passwordInput").value;
+  let role = document.getElementById("roleInput").value;
 
-  let password =
-    document.getElementById("passwordInput").value;
-
-  let role =
-    document.getElementById("roleInput").value;
-
-  // =========================
-  // PASSWORD VALIDATION
-  // =========================
-  const passwordError =
-    validatePassword(password);
+  const passwordError = validatePassword(password);
 
   if (passwordError) {
-
     showToast(passwordError, "warning");
-
     return;
   }
 
   try {
 
     const userCred =
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      await createUserWithEmailAndPassword(auth, email, password);
 
-    await setDoc(
-      doc(db, "users", userCred.user.uid),
-      {
-        email,
-        role
-      }
-    );
+    const user = userCred.user;
 
-    showToast(
-      "Account created successfully ✔"
-    );
+    // =========================
+    // SEND EMAIL VERIFICATION
+    // =========================
+    await sendEmailVerification(user);
 
-    role === "vendor"
-      ? location.href = "vendor.html"
-      : location.href = "customer.html";
+    // save user in firestore
+    await setDoc(doc(db, "users", user.uid), {
+      email,
+      role,
+      verified: false
+    });
+
+    showToast("Check your email to verify account ✔");
+
+    // DO NOT redirect immediately
+    // force them to verify first
+    location.href = "verify.html";
 
   } catch (e) {
-
     console.error(e);
-
     showToast(e.message, "error");
   }
 };
@@ -280,6 +271,16 @@ window.login = async () => {
     }
     showToast("Login successful ✔");
     const role = userDoc.data().role;
+    
+    const user = userCred.user;
+
+// check verification
+await user.reload();
+
+if (!user.emailVerified) {
+  showToast("Please verify your email first", "warning");
+  return;
+}
 
     // IMPORTANT FIX:
     // wait for auth state to settle before redirect UI breaks
