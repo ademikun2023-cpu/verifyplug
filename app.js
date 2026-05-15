@@ -235,11 +235,14 @@ window.signup = async () => {
     // =========================
     // SAVE USER ROLE
     // =========================
-    await setDoc(doc(db, "users", user.uid), {
-      email,
-      role,
-      createdAt: new Date()
-    });
+await setDoc(doc(db, "users", user.uid), {
+  email,
+  role,
+  createdAt: new Date(),
+
+  // NEW SYSTEM
+  requireEmailVerification: true
+});
 
     showToast(
       "Verification email sent ✔ Check your inbox",
@@ -276,9 +279,26 @@ window.login = async () => {
     const user = userCred.user;
 
     // =========================
-    // EMAIL VERIFICATION CHECK
+    // GET USER ROLE + DATA
     // =========================
-    if (!user.emailVerified) {
+    const userSnap =
+      await getDoc(doc(db, "users", user.uid));
+
+    if (!userSnap.exists()) {
+      showToast("User profile missing", "error");
+      return;
+    }
+
+    const userData = userSnap.data();
+
+    // =========================
+    // EMAIL VERIFICATION CHECK
+    // ONLY FOR NEW ACCOUNTS
+    // =========================
+    if (
+      userData.requireEmailVerification === true &&
+      !user.emailVerified
+    ) {
 
       showToast(
         "Please verify your email before logging in",
@@ -299,18 +319,7 @@ window.login = async () => {
       return;
     }
 
-    // =========================
-    // GET USER ROLE
-    // =========================
-    const userSnap =
-      await getDoc(doc(db, "users", user.uid));
-
-    if (!userSnap.exists()) {
-      showToast("User profile missing", "error");
-      return;
-    }
-
-    const role = userSnap.data().role;
+    const role = userData.role;
 
     // =========================
     // ROUTING
