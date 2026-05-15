@@ -3,9 +3,7 @@ where
 // ================= FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-import {
-  sendEmailVerification
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
   getAuth,
@@ -235,7 +233,13 @@ window.signup = async () => {
     });
 
     showToast("Account created ✔", "success");
+    const userCred =
+  await createUserWithEmailAndPassword(auth, email, password);
 
+// SEND VERIFICATION EMAIL
+await sendEmailVerification(userCred.user);
+
+showToast("Verification email sent. Check inbox ✔", "success");
     // =========================
     // ROUTE USER
     // =========================
@@ -287,7 +291,17 @@ window.login = async () => {
     }
 
     const role = userSnap.data().role;
+    const userCred =
+  await signInWithEmailAndPassword(auth, email, password);
 
+const user = userCred.user;
+
+// ❌ BLOCK UNVERIFIED USERS
+if (!user.emailVerified) {
+  await auth.signOut();
+  showToast("Please verify your email first", "error");
+  return;
+}
     // =========================
     // ROUTING
     // =========================
