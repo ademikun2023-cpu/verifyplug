@@ -455,10 +455,12 @@ window.addVendor = async function () {
   const vendorLocation =
     document.getElementById("vendorLocation").value.trim();
 
+  const vendorCategory =
+  document.getElementById("vendorCategory").value;
   // =========================
   // VALIDATION
   // =========================
-  if (!vendorName || !vendorPhone || !vendorLocation) {
+  if (!vendorName || !vendorPhone || !vendorLocation || !vendorCategory) {
     showToast("Please fill all fields", "warning");
     return;
   }
@@ -493,7 +495,7 @@ window.addVendor = async function () {
       name: vendorName,
       phone: cleanPhone,
       location: vendorLocation,
-
+      category: vendorCategory,
       verified: false,
       banned: false,
 
@@ -1733,12 +1735,23 @@ window.loadPremiumVendors = async function () {
 
   if (!container) return;
 
-  container.innerHTML = "<p>Loading vendors...</p>";
+  // =========================
+  // CATEGORY FILTER
+  // =========================
+  const selectedCategory =
+    document.getElementById(
+      "premiumCategoryFilter"
+    ).value;
+
+  container.innerHTML =
+    "<p>Loading vendors...</p>";
 
   try {
 
     const snap =
-      await getDocs(collection(db, "vendors"));
+      await getDocs(
+        collection(db, "vendors")
+      );
 
     container.innerHTML = "";
 
@@ -1752,12 +1765,22 @@ window.loadPremiumVendors = async function () {
         d.trustScore ?? 50;
 
       // =========================
-      // PREMIUM CONDITIONS
+      // PREMIUM FILTER LOGIC
       // =========================
       if (
+
         d.verified === true &&
+
         d.banned !== true &&
-        trustScore >= 70
+
+        trustScore >= 90 &&
+
+        (
+          selectedCategory === "All" ||
+
+          d.category === selectedCategory
+        )
+
       ) {
 
         found = true;
@@ -1765,13 +1788,18 @@ window.loadPremiumVendors = async function () {
         const div =
           document.createElement("div");
 
-        div.className = "premium-vendor-card";
+        div.className =
+          "premium-vendor-card";
 
         div.innerHTML = `
 
           <h3>
             ⭐ ${d.name}
           </h3>
+
+          <p>
+            📂 ${d.category || "Others"}
+          </p>
 
           <p>
             📞 ${d.phone || "No phone"}
@@ -1786,12 +1814,8 @@ window.loadPremiumVendors = async function () {
             ${trustScore}%
           </p>
 
-          <div class="badges">
-
-           <span class="verified-badge">
-              ✅ Premium Vendor
-          </span>
-
+          <div class="premium-badge">
+            ✅ Premium Vendor
           </div>
 
         `;
@@ -1807,9 +1831,14 @@ window.loadPremiumVendors = async function () {
     if (!found) {
 
       container.innerHTML = `
-        <p>
-          No premium vendors available yet.
-        </p>
+        <div class="card">
+
+          <p>
+            No premium vendors found
+            in this category.
+          </p>
+
+        </div>
       `;
     }
 
@@ -1823,3 +1852,10 @@ window.loadPremiumVendors = async function () {
     );
   }
 };
+document
+  .getElementById("premiumCategoryFilter")
+  .addEventListener("change", () => {
+
+    loadPremiumVendors();
+
+  });
