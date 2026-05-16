@@ -1141,7 +1141,11 @@ onAuthStateChanged(auth, (user) => {
     window.location.pathname.includes("customer.html")
   ) {
 
+    // CUSTOMER INFO
     loadCustomerDashboard();
+
+    // PREMIUM VENDORS
+    loadPremiumVendors();
   }
 });
 // ===============================
@@ -1718,6 +1722,103 @@ window.generatePurchaseCode = async function (vendorId) {
 
     showToast(
       "Failed to generate code",
+      "error"
+    );
+  }
+};
+window.loadPremiumVendors = async function () {
+
+  const container =
+    document.getElementById("premiumVendors");
+
+  if (!container) return;
+
+  container.innerHTML = "<p>Loading vendors...</p>";
+
+  try {
+
+    const snap =
+      await getDocs(collection(db, "vendors"));
+
+    container.innerHTML = "";
+
+    let found = false;
+
+    snap.forEach(docItem => {
+
+      const d = docItem.data();
+
+      const trustScore =
+        d.trustScore ?? 50;
+
+      // =========================
+      // PREMIUM CONDITIONS
+      // =========================
+      if (
+        d.verified === true &&
+        d.banned !== true &&
+        trustScore >= 70
+      ) {
+
+        found = true;
+
+        const div =
+          document.createElement("div");
+
+        div.className = "premium-vendor-card";
+
+        div.innerHTML = `
+
+          <h3>
+            ⭐ ${d.name}
+          </h3>
+
+          <p>
+            📞 ${d.phone || "No phone"}
+          </p>
+
+          <p>
+            🧾 ${d.location || "No location"}
+          </p>
+
+          <p>
+            📊 Trust Score:
+            ${trustScore}%
+          </p>
+
+          <div class="badges">
+
+           <span class="verified-badge">
+              ✅ Premium Vendor
+          </span>
+
+          </div>
+
+        `;
+
+        container.appendChild(div);
+      }
+
+    });
+
+    // =========================
+    // EMPTY STATE
+    // =========================
+    if (!found) {
+
+      container.innerHTML = `
+        <p>
+          No premium vendors available yet.
+        </p>
+      `;
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+    showToast(
+      "Failed to load premium vendors",
       "error"
     );
   }
