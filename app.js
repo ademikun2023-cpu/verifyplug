@@ -198,29 +198,33 @@ let toastTimer = null;
 
 window.showToast = function (message, type = "success") {
 
-  const toast = document.getElementById("toast");
-  if (!toast) return;
+  const toast =
+    document.getElementById("toast");
 
-  // clear previous timer (prevents stacking bugs)
-  if (toastTimer) {
-    clearTimeout(toastTimer);
-    toastTimer = null;
+  if (!toast) {
+    console.error("Toast div missing");
+    return;
   }
 
-  // reset classes efficiently
-  toast.className = "show";
+  // RESET CLASSES
+  toast.className = "";
+
+  // SET MESSAGE
+  toast.innerText = message;
+
+  // FORCE SHOW
+  toast.style.display = "block";
+
+  // ADD CLASSES
+  toast.classList.add("show");
   toast.classList.add(type);
 
-  // set message
-  toast.textContent = message;
+  // REMOVE AFTER TIME
+  setTimeout(() => {
 
-  // force reflow for smooth animation reset
-  toast.offsetHeight;
-
-  // auto hide
-  toastTimer = setTimeout(() => {
     toast.classList.remove("show");
-  }, 2500);
+
+  }, 3000);
 };
 // ================= ROUTING =================
 window.goCustomer = () => location.href = "customer.html";
