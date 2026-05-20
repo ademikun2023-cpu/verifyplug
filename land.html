@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Saph</title>
+
+  <link rel="stylesheet" href="style.css"/>
+
+  <style>
+
+    /* =========================
+       LANDING PAGE ONLY
+    ========================= */
+
+    .landing-hero {
+
+      min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      text-align: center;
+
+      padding: 120px 24px 80px;
+
+      position: relative;
+
+      overflow: hidden;
+    }
+
+    .landing-hero::before {
+
+      content: "";
+
+      position: absolute;
+      inset: 0;
+
+      background:
+        radial-gradient(circle at top left,
+        rgba(201,169,97,0.08),
+        transparent 35%),
+
+        radial-gradient(circle at bottom right,
+        rgba(90,123,158,0.08),
+        transparent 35%);
+
+      pointer-events: none;
+    }
+
+    .hero-content {
+
+      position: relative;
+      z-index: 2;
+
+      max-width: 850px;
+    }
+
+    .hero-badge {
+
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+
+      padding: 10px 18px;
+
+      border-radius: 999px;
+
+      background:
+        rgba(201,169,97,0.10);
+
+      border:
+        1px solid rgba(201,169,97,0.20);
+
+      color: #c9a961;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      margin-bottom: 26px;
+
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-title {
+
+      font-size: 70px;
+      line-height: 1.05;
+
+      font-weight: 800;
+
+      letter-spacing: -3px;
+
+      margin-bottom: 24px;
+    }
+
+    .hero-title span {
+
+      background:
+        linear-gradient(
+          90deg,
+          #ffffff,
+          #c9a961
+        );
+
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+
+      max-width: 720px;
+
+      margin: auto;
+
+      font-size: 18px;
+      line-height: 1.9;
+
+      color: #b8b8b8;
+    }
+
+    .hero-buttons {
+
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+
+      margin-top: 40px;
+
+      flex-wrap: wrap;
+    }
+
+    .hero-btn {
+
+      width: auto;
+
+      padding: 16px 28px;
+
+      text-decoration: none;
+
+      border-radius: 14px;
+
+      font-weight: 600;
+
+      transition: 0.3s ease;
+    }
+
+    .hero-btn-primary {
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(201,169,97,0.20),
+          rgba(90,123,158,0.12)
+        );
+
+      border:
+        1px solid rgba(201,169,97,0.30);
+
+      color: #c9a961;
+    }
+
+    .hero-btn-primary:hover {
+
+      transform: translateY(-3px);
+
+      box-shadow:
+        0 18px 40px rgba(201,169,97,0.12);
+    }
+
+    .hero-btn-secondary {
+
+      background:
+        rgba(255,255,255,0.03);
+
+      border:
+        1px solid rgba(255,255,255,0.08);
+
+      color: white;
+    }
+
+    .hero-btn-secondary:hover {
+
+      transform: translateY(-3px);
+
+      border-color:
+        rgba(255,255,255,0.18);
+    }
+
+    /* =========================
+       STATS
+    ========================= */
+
+    .hero-stats {
+
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+
+      gap: 18px;
+
+      margin-top: 70px;
+    }
+
+    .stat-card {
+
+      padding: 26px;
+
+      border-radius: 18px;
+
+      background:
+        rgba(26,26,30,0.7);
+
+      border:
+        1px solid rgba(255,255,255,0.06);
+
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-card h2 {
+
+      font-size: 34px;
+
+      color: #c9a961;
+
+      margin-bottom: 8px;
+    }
+
+    .stat-card p {
+
+      font-size: 13px;
+
+      color: #9ca3af;
+    }
+
+    /* =========================
+       FEATURES
+    ========================= */
+
+    .features-section {
+
+      padding: 120px 24px;
+    }
+
+    .section-header {
+
+      text-align: center;
+
+      max-width: 700px;
+
+      margin: auto auto 70px;
+    }
+
+    .section-header h2 {
+
+      font-size: 52px;
+
+      margin-bottom: 18px;
+    }
+
+    .section-header p {
+
+      font-size: 16px;
+
+      color: #9ca3af;
+    }
+
+    .features-grid {
+
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(300px, 1fr));
+
+      gap: 26px;
+
+      max-width: 1250px;
+
+      margin: auto;
+    }
+
+    .feature-card {
+
+      opacity: 0;
+      transform: translateY(70px);
+
+      transition:
+        opacity 0.8s ease,
+        transform 0.8s ease;
+
+      padding: 34px;
+
+      border-radius: 22px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(26,26,30,0.8),
+          rgba(36,36,40,0.6)
+        );
+
+      border:
+        1px solid rgba(255,255,255,0.06);
+
+      backdrop-filter: blur(12px);
+
+      position: relative;
+
+      overflow: hidden;
+    }
+
+    .feature-card.show {
+
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .feature-card::before {
+
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 2px;
+
+      background:
+        linear-gradient(
+          90deg,
+          #c9a961,
+          #5a7b9e
+        );
+    }
+
+    .feature-icon {
+
+      width: 64px;
+      height: 64px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 18px;
+
+      margin-bottom: 22px;
+
+      font-size: 28px;
+
+      background:
+        rgba(201,169,97,0.10);
+
+      border:
+        1px solid rgba(201,169,97,0.18);
+    }
+
+    .feature-card h3 {
+
+      font-size: 24px;
+
+      margin-bottom: 16px;
+    }
+
+    .feature-card p {
+
+      font-size: 14px;
+
+      line-height: 1.9;
+
+      color: #b8b8b8;
+    }
+
+    /* =========================
+       CTA SECTION
+    ========================= */
+
+    .cta-section {
+
+      padding: 120px 24px 140px;
+    }
+
+    .cta-card {
+
+      max-width: 1100px;
+
+      margin: auto;
+
+      text-align: center;
+
+      padding: 70px 40px;
+
+      border-radius: 28px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(26,26,30,0.95),
+          rgba(36,36,40,0.75)
+        );
+
+      border:
+        1px solid rgba(255,255,255,0.08);
+
+      position: relative;
+
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+
+      content: "";
+
+      position: absolute;
+      inset: 0;
+
+      background:
+        radial-gradient(circle at top,
+        rgba(201,169,97,0.10),
+        transparent 50%);
+
+      pointer-events: none;
+    }
+
+    .cta-card h2 {
+
+      font-size: 52px;
+
+      margin-bottom: 20px;
+    }
+
+    .cta-card p {
+
+      max-width: 700px;
+
+      margin: auto;
+
+      font-size: 16px;
+
+      line-height: 1.9;
+    }
+
+    .cta-card .hero-buttons {
+
+      margin-top: 36px;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 900px) {
+
+      .hero-title {
+        font-size: 48px;
+      }
+
+      .section-header h2,
+      .cta-card h2 {
+        font-size: 36px;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+
+    <h2>Saph</h2>
+
+    <div style="display:flex; gap:12px;">
+
+      <a href="index.html"
+        class="hero-btn hero-btn-secondary"
+        style="margin:0;">
+        Login
+      </a>
+
+      <a href="index.html"
+        class="hero-btn hero-btn-primary"
+        style="margin:0;">
+        Get Started
+      </a>
+
+    </div>
+
+  </div>
+
+  <!-- HERO -->
+  <section class="landing-hero">
+
+    <div class="hero-content">
+
+      <div class="hero-badge">
+        🛡 Trusted Vendor Verification Platform
+      </div>
+
+      <h1 class="hero-title">
+
+        Stop Getting
+        <span>Scammed Online.</span>
+
+      </h1>
+
+      <p class="hero-subtitle">
+
+        Saph helps customers identify trusted vendors,
+        verified businesses and reliable online sellers
+        using trust scores, reviews, verification systems
+        and scam prevention tools.
+
+      </p>
+
+      <div class="hero-buttons">
+
+        <a href="index.html"
+          class="hero-btn hero-btn-primary">
+
+          Get Started
+
+        </a>
+
+        <a href="#features"
+          class="hero-btn hero-btn-secondary">
+
+          Explore Features
+
+        </a>
+
+      </div>
+
+      <div class="hero-stats">
+
+        <div class="stat-card">
+          <h2>90+</h2>
+          <p>Trust score required for premium vendors</p>
+        </div>
+
+        <div class="stat-card">
+          <h2>24/7</h2>
+          <p>Vendor discovery and scam prevention</p>
+        </div>
+
+        <div class="stat-card">
+          <h2>100%</h2>
+          <p>Focused on safer online transactions</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section" id="features">
+
+    <div class="section-header">
+
+      <h2>Why People Use Saph</h2>
+
+      <p>
+        Built to help customers verify vendors,
+        avoid scams and discover trusted businesses
+        in different categories.
+      </p>
+
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+
+        <div class="feature-icon">🛡</div>
+
+        <h3>Vendor Verification</h3>
+
+        <p>
+          Vendors go through verification systems before
+          receiving premium trust badges and visibility.
+        </p>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="feature-icon">⭐</div>
+
+        <h3>Trust Scores</h3>
+
+        <p>
+          Every vendor receives a trust score based on
+          reviews, customer activity and account behavior.
+        </p>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="feature-icon">💬</div>
+
+        <h3>Customer Reviews</h3>
+
+        <p>
+          Customers can leave detailed reviews showing
+          pros, cons and overall ratings after purchases.
+        </p>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="feature-icon">🔑</div>
+
+        <h3>Purchase Codes</h3>
+
+        <p>
+          Vendors generate secure purchase codes to
+          confirm real transactions and reduce fake reviews.
+        </p>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="feature-icon">🚫</div>
+
+        <h3>Scam Prevention</h3>
+
+        <p>
+          Banned vendors are automatically restricted
+          from appearing publicly or accessing vendor tools.
+        </p>
+
+      </div>
+
+      <div class="feature-card">
+
+        <div class="feature-icon">📂</div>
+
+        <h3>Category Discovery</h3>
+
+        <p>
+          Browse trusted vendors by niche including
+          gaming, digital services, food selling,
+          physical products and more.
+        </p>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+
+    <div class="cta-card">
+
+      <h2>
+        Find Trusted Vendors Faster.
+      </h2>
+
+      <p>
+
+        Whether you're buying gaming services,
+        digital products or physical goods,
+        Saph helps you reduce risk and deal
+        with trusted vendors confidently.
+
+      </p>
+
+      <div class="hero-buttons">
+
+        <a href="index.html"
+          class="hero-btn hero-btn-primary">
+
+          Create Account
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <script>
+
+    // =========================
+    // SCROLL REVEAL
+    // =========================
+
+    const cards =
+      document.querySelectorAll(".feature-card");
+
+    const observer =
+      new IntersectionObserver((entries) => {
+
+        entries.forEach((entry) => {
+
+          if (entry.isIntersecting) {
+
+            entry.target.classList.add("show");
+
+          }
+
+        });
+
+      }, {
+        threshold: 0.15
+      });
+
+    cards.forEach((card) => {
+      observer.observe(card);
+    });
+
+  </script>
+
+</body>
+</html>
