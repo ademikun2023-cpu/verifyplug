@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VerifyPlug</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+</div>
+ <div class="topbar">
+  <div><b>VerifyPlug</b></div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Verify Before You Pay 🔍</h1>
+    <p class="sub">Avoid scams. Verify vendors instantly.</p>
+  </div>
+<div class="card">
+  <div class="label">Account</div>
+
+  <div class="stack">
+    <input id="emailInput" placeholder="Email">
+    <input id="passwordInput" type="password" placeholder="Password">
+
+    <select id="roleInput">
+      <option value="customer">Customer</option>
+      <option value="vendor">Vendor</option>
+    </select>
+
+    <button onclick="signup()">Sign Up</button>
+    <button onclick="login()">Login</button>
+  </div>
+</div>
+
+</div>
+<!-- TOAST -->
+<div id="toast"></div>
+<script src="/app.js" type="module"></script>
+</body>
+</html>
