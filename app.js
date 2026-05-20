@@ -1704,19 +1704,22 @@ window.generatePurchaseCode = async function (vendorId) {
       lastCodeYear:
         currentYear
     });
+// =========================
+// SUCCESS
+// =========================
+showToast(
+  `Purchase code: ${code}`,
+  "success"
+);
 
-    // =========================
-    // SUCCESS
-    // =========================
-    showToast(
-      `Purchase code: ${code}`,
-      "success"
-    );
+// =========================
+// RELOAD DASHBOARD
+// =========================
+setTimeout(() => {
 
-    // =========================
-    // RELOAD DASHBOARD
-    // =========================
-    loadVendorDashboard();
+  loadVendorDashboard();
+
+}, 1800);
 
   } catch (err) {
 
