@@ -1712,6 +1712,15 @@ showToast(
   "success"
 );
 
+// =========================
+// RELOAD DASHBOARD
+// =========================
+setTimeout(() => {
+
+  loadVendorDashboard();
+
+}, 1800);
+
   } catch (err) {
 
     console.error(err);
