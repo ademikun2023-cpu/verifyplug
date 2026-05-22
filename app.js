@@ -281,37 +281,35 @@ window.signup = async () => {
     const user = userCred.user;
 
     // =========================
-    // SAVE USER ROLE (OPTIMIZED WRITE)
+    // SEND VERIFICATION EMAIL
+    // =========================
+    await sendEmailVerification(user);
+
+    // =========================
+    // SAVE USER ROLE
     // =========================
     await setDoc(
       doc(db, "users", user.uid),
       {
         email,
         role,
-        createdAt: Date.now() // faster than new Date()
+        verified: false,
+        createdAt: Date.now()
       }
     );
 
     // =========================
-    // SUCCESS FEEDBACK FIRST
+    // SUCCESS FEEDBACK
     // =========================
     showToast(
-      "Account created ✔",
+      "Verification email sent ✔ Check your inbox",
       "success"
     );
 
     // =========================
-    // SMALL DELAY FOR SMOOTHER UX
+    // SIGN OUT UNTIL VERIFIED
     // =========================
-    setTimeout(() => {
-
-      if (role === "vendor") {
-        window.location.href = "vendor.html";
-      } else {
-        window.location.href = "customer.html";
-      }
-
-    }, 400);
+    await auth.signOut();
 
   } catch (e) {
 
