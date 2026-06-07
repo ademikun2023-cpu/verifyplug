@@ -5,24 +5,24 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-/* ================= ROOT ================= */
+/* ================= ROOT (SaaS CLEAN) ================= */
 :root {
   --bg: #f6f8fc;
-  --card: rgba(255, 255, 255, 0.72);
-  --glass: rgba(255, 255, 255, 0.55);
-
+  --card: #ffffff;
   --text: #0f172a;
   --muted: #64748b;
 
   --primary: #2563eb;
   --primary-light: #4da3ff;
 
+  --gold: #d4af37;
+
   --border: rgba(15, 23, 42, 0.08);
 
-  --shadow-sm: 0 4px 14px rgba(0,0,0,0.06);
-  --shadow-md: 0 10px 25px rgba(0,0,0,0.08);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 6px 18px rgba(0,0,0,0.06);
 
-  --radius: 14px;
+  --radius: 12px;
 }
 
 /* ================= BODY ================= */
@@ -32,7 +32,7 @@ body {
   line-height: 1.6;
 }
 
-/* LIGHT noise only (no blur overlay = faster) */
+/* very light background noise only (no blur) */
 body::before {
   content: "";
   position: fixed;
@@ -41,24 +41,25 @@ body::before {
   pointer-events: none;
 }
 
-/* ================= GLASS TOPBAR ================= */
+/* ================= TOPBAR ================= */
 .topbar {
   width: 100%;
   padding: 14px 24px;
-
-  background: var(--glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-
+  background: rgba(255,255,255,0.9);
   border-bottom: 1px solid var(--border);
-
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.topbar h1,
+.topbar h2,
+.topbar h3 {
+  font-size: 18px;
+  font-weight: 600;
 }
 
 /* ================= CONTAINER ================= */
@@ -68,16 +69,13 @@ body::before {
   padding: 30px 20px;
 }
 
-/* ================= GLASS CARDS ================= */
+/* ================= CARDS ================= */
 .card,
 .vendor-card,
 .vendor-owner-card,
 .result-card,
 .admin-section {
   background: var(--card);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
@@ -85,7 +83,6 @@ body::before {
 
   box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  will-change: transform;
 }
 
 .card:hover,
@@ -114,17 +111,11 @@ select {
   width: 100%;
   padding: 12px;
   margin-top: 10px;
-
   border-radius: 10px;
   border: 1px solid var(--border);
-
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-
+  background: #fff;
   color: var(--text);
   outline: none;
-
   transition: 0.15s ease;
 }
 
@@ -140,23 +131,17 @@ button {
   width: 100%;
   margin-top: 14px;
   padding: 12px;
-
   border-radius: 10px;
   border: none;
-
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: var(--primary);
   color: white;
-
   font-weight: 600;
   cursor: pointer;
-
   transition: 0.15s ease;
-  will-change: transform;
 }
 
 button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
+  background: var(--primary-light);
 }
 
 /* ================= BADGES ================= */
@@ -172,7 +157,7 @@ button:hover {
   border: 1px solid;
 }
 
-/* clean SaaS palette */
+/* clean SaaS colors */
 .status-recommended {
   color: #16a34a;
   background: rgba(22,163,74,0.08);
@@ -180,7 +165,7 @@ button:hover {
 }
 
 .status-normal {
-  color: var(--primary);
+  color: #2563eb;
   background: rgba(37,99,235,0.08);
   border-color: rgba(37,99,235,0.2);
 }
@@ -208,27 +193,17 @@ button:hover {
   display: none;
   position: fixed;
   inset: 0;
-
-  background: rgba(0,0,0,0.35);
-
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
+  background: rgba(0,0,0,0.5);
   justify-content: center;
   align-items: center;
 }
 
 .modal-content {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-
+  background: #fff;
   padding: 20px;
   border-radius: var(--radius);
   width: 90%;
   max-width: 500px;
-
-  box-shadow: var(--shadow-md);
 }
 
 /* ================= TOAST ================= */
@@ -237,13 +212,10 @@ button:hover {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-
-  background: rgba(17,17,17,0.9);
+  background: #111;
   color: white;
-
   padding: 10px 14px;
   border-radius: 10px;
-
   opacity: 0;
   transition: 0.2s;
 }
@@ -252,7 +224,7 @@ button:hover {
   opacity: 1;
 }
 
-/* ================= PREMIUM ================= */
+/* ================= PREMIUM SECTION ================= */
 #premiumVendors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -260,14 +232,10 @@ button:hover {
 }
 
 .premium-vendor-card {
-  background: var(--card);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
+  background: #fff;
   border: 1px solid var(--border);
   padding: 16px;
   border-radius: var(--radius);
-
   box-shadow: var(--shadow-sm);
 }
 
