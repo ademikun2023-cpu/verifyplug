@@ -197,33 +197,31 @@ function renderEmptyState(container) {
 let toastTimer = null;
 
 window.showToast = function (message, type = "success") {
-
-  const toast =
-    document.getElementById("toast");
+  let toast = document.getElementById("toast");
 
   if (!toast) {
-    console.error("Toast div missing");
-    return;
+    toast = document.createElement("div");
+    toast.id = "toast";
+    document.body.appendChild(toast);
   }
 
-  // RESET CLASSES
-  toast.className = "";
-
-  // SET MESSAGE
   toast.innerText = message;
 
-  // FORCE SHOW
+  toast.className = "";
+  toast.classList.add("toast", type, "show");
+
   toast.style.display = "block";
+  toast.style.position = "fixed";
+  toast.style.bottom = "20px";
+  toast.style.left = "50%";
+  toast.style.transform = "translateX(-50%)";
+  toast.style.zIndex = "999999";
 
-  // ADD CLASSES
-  toast.classList.add("show");
-  toast.classList.add(type);
+  clearTimeout(window.toastTimer);
 
-  // REMOVE AFTER TIME
-  setTimeout(() => {
-
+  window.toastTimer = setTimeout(() => {
     toast.classList.remove("show");
-
+    toast.style.display = "none";
   }, 3000);
 };
 // ================= ROUTING =================
