@@ -5,12 +5,10 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-/* ================= ROOT SYSTEM ================= */
+/* ================= GLOBAL THEME ================= */
 :root {
   --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-
   --text: #0f172a;
   --muted: #64748b;
 
@@ -19,20 +17,21 @@
 
   --border: #e2e8f0;
 
-  --shadow-sm: 0 2px 6px rgba(0,0,0,0.05);
-  --shadow-md: 0 10px 25px rgba(0,0,0,0.08);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-hover: 0 10px 25px rgba(0,0,0,0.10);
 
   --radius: 12px;
 }
 
-/* ================= BODY ================= */
-body {
-  background: var(--bg);
-  color: var(--text);
+/* ================= FORCE BODY (ALL PAGES) ================= */
+html, body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
   line-height: 1.6;
+  min-height: 100vh;
 }
 
-/* subtle SaaS grid */
+/* soft SaaS grid background */
 body::before {
   content: "";
   position: fixed;
@@ -41,50 +40,65 @@ body::before {
   background-size: 22px 22px;
   opacity: 0.35;
   pointer-events: none;
+  z-index: 0;
 }
 
-/* ================= LAYOUT WRAPPER ================= */
+/* make EVERYTHING sit above background */
+* {
+  position: relative;
+  z-index: 1;
+}
+
+/* ================= FORCE ALL TEXT ================= */
+h1, h2, h3, h4, h5 {
+  color: var(--text) !important;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+p, span, small, label {
+  color: var(--muted);
+}
+
+/* ================= FORCE LINKS ================= */
+a {
+  color: var(--primary) !important;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--primary-light) !important;
+}
+
+/* ================= FORCE ALL CONTAINERS ================= */
 .container,
-main {
+main,
+section,
+.auth-container,
+.login-container,
+.register-container,
+.dashboard,
+.wrapper {
   max-width: 1100px;
   margin: auto;
   padding: 32px 20px;
 }
 
-/* ================= TOPBAR / HEADER ================= */
-.topbar,
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-
-  padding: 14px 24px;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-/* ================= CARDS (ALL PAGES UNIFIED) ================= */
+/* ================= FORCE CARDS EVERYWHERE ================= */
 .card,
 .vendor-card,
 .vendor-owner-card,
 .result-card,
 .admin-section,
 .auth-card,
-.form-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+.form-card,
+div[class*="card"] {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: var(--radius);
-
   padding: 20px;
-  margin-bottom: 16px;
 
-  box-shadow: var(--shadow-sm);
-
+  box-shadow: var(--shadow);
   transition: 0.2s ease;
 }
 
@@ -92,37 +106,19 @@ header {
 .vendor-card:hover,
 .vendor-owner-card:hover,
 .result-card:hover,
-.admin-section:hover {
+.admin-section:hover,
+div[class*="card"]:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-hover);
 }
 
-/* ================= HEADINGS ================= */
-h1 {
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.8px;
-}
-
-h2 {
-  font-size: 26px;
-  font-weight: 700;
-}
-
-h3 {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-p {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-/* ================= INPUTS (AUTH FIX INCLUDED) ================= */
+/* ================= FORCE INPUTS ================= */
 input,
 textarea,
-select {
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"] {
   width: 100%;
   padding: 12px 14px;
   margin-top: 10px;
@@ -137,17 +133,18 @@ select {
   transition: 0.2s ease;
 }
 
-/* IMPORTANT: fixes auth pages feeling "plain" */
 input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
 }
 
-/* ================= BUTTONS (GLOBAL FIX) ================= */
+/* ================= FORCE BUTTONS ================= */
 button,
-.btn {
+.btn,
+[type="button"],
+[type="submit"] {
   width: 100%;
   margin-top: 14px;
   padding: 12px 14px;
@@ -155,8 +152,8 @@ button,
   border-radius: 10px;
   border: none;
 
-  background: var(--primary);
-  color: white;
+  background: var(--primary) !important;
+  color: #fff !important;
 
   font-weight: 600;
   cursor: pointer;
@@ -166,19 +163,25 @@ button,
 
 button:hover,
 .btn:hover {
-  background: var(--primary-light);
+  background: var(--primary-light) !important;
   transform: translateY(-1px);
 }
 
-/* secondary button (auth pages often need this) */
-.btn-secondary {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-}
+/* ================= TOPBAR FORCE ================= */
+.topbar,
+header,
+nav {
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
 
-.btn-secondary:hover {
-  border-color: var(--primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 /* ================= BADGES ================= */
@@ -195,6 +198,7 @@ button:hover,
   border: 1px solid;
 }
 
+/* SaaS clean colors */
 .status-recommended {
   color: #16a34a;
   background: #ecfdf5;
@@ -225,14 +229,13 @@ button:hover,
   border-color: #bfdbfe;
 }
 
-/* ================= MODAL ================= */
+/* ================= MODALS ================= */
 .modal {
-  display: none;
   position: fixed;
   inset: 0;
+  display: none;
 
   background: rgba(15, 23, 42, 0.45);
-
   justify-content: center;
   align-items: center;
 }
@@ -240,27 +243,20 @@ button:hover,
 .modal-content {
   background: var(--surface);
   border-radius: var(--radius);
-
   padding: 24px;
+
   width: 90%;
   max-width: 520px;
 
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-hover);
 }
 
-/* ================= AUTH PAGES FIX ================= */
-.auth-container,
-.login-container,
-.register-container {
-  max-width: 420px;
-  margin: 60px auto;
-  padding: 20px;
-}
-
-/* makes auth feel premium, not basic */
-.auth-card {
-  padding: 28px;
-  border-radius: 14px;
+/* ================= GRID ================= */
+.grid,
+#premiumVendors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 /* ================= TOAST ================= */
@@ -284,37 +280,13 @@ button:hover,
   opacity: 1;
 }
 
-/* ================= PREMIUM GRID ================= */
-#premiumVendors {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+/* ================= FORCE CLEAN SCROLL ================= */
+* {
+  scroll-behavior: smooth;
 }
 
-/* ================= PREMIUM CARDS ================= */
-.premium-vendor-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-
-  padding: 18px;
-
-  box-shadow: var(--shadow-sm);
-  transition: 0.2s ease;
-}
-
-.premium-vendor-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 768px) {
-  .container,
-  main {
-    padding: 20px 14px;
-  }
-
-  h1 { font-size: 26px; }
-  h2 { font-size: 20px; }
+/* remove laggy effects globally */
+* {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
