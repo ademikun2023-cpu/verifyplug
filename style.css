@@ -2,28 +2,27 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-/* ================= ROOT (GOLD PREMIUM THEME) ================= */
+/* ================= ROOT SYSTEM ================= */
 :root {
-  --bg: #0f0f0f;
-  --surface: #1a1a1e;
-  --surface-2: #222226;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
 
-  --text: #f5f5f5;
-  --muted: #b8b8b8;
-  --dim: #777;
+  --text: #0f172a;
+  --muted: #64748b;
 
-  --gold: #c9a961;
-  --gold-soft: #5a7b9e;
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
 
-  --border: #2a2a2f;
+  --border: #e2e8f0;
 
-  --shadow: 0 2px 10px rgba(0,0,0,0.5);
-  --shadow-hover: 0 12px 30px rgba(0,0,0,0.7);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-md: 0 10px 25px rgba(0,0,0,0.08);
 
-  --radius: 14px;
+  --radius: 12px;
 }
 
 /* ================= BODY ================= */
@@ -33,83 +32,76 @@ body {
   line-height: 1.6;
 }
 
-/* subtle premium texture (no lag) */
+/* subtle SaaS grid */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(201,169,97,0.05), transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(90,123,158,0.03), transparent 50%);
+  background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.35;
   pointer-events: none;
 }
 
-/* ================= GLOBAL LAYOUT ================= */
+/* ================= LAYOUT WRAPPER ================= */
 .container,
-main,
-section,
-.auth-container,
-.login-container,
-.register-container,
-.dashboard {
+main {
   max-width: 1100px;
   margin: auto;
   padding: 32px 20px;
 }
 
-/* ================= TOPBAR ================= */
+/* ================= TOPBAR / HEADER ================= */
 .topbar,
-header,
-nav {
-  background: rgba(26,26,30,0.95);
+header {
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
+
+  padding: 14px 24px;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  padding: 16px 24px;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
 }
 
-/* ================= CARDS (GLOBAL FIX) ================= */
+/* ================= CARDS (ALL PAGES UNIFIED) ================= */
 .card,
 .vendor-card,
 .vendor-owner-card,
 .result-card,
 .admin-section,
 .auth-card,
-.login-card,
-.register-card {
+.form-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 
-  padding: 22px;
+  padding: 20px;
   margin-bottom: 16px;
 
-  box-shadow: var(--shadow);
-  transition: 0.25s ease;
+  box-shadow: var(--shadow-sm);
+
+  transition: 0.2s ease;
 }
 
 .card:hover,
 .vendor-card:hover,
 .vendor-owner-card:hover,
 .result-card:hover,
-.auth-card:hover,
-.login-card:hover,
-.register-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-hover);
-  border-color: rgba(201,169,97,0.3);
+.admin-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* ================= HEADINGS ================= */
 h1 {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.8px;
 }
 
 h2 {
@@ -127,7 +119,7 @@ p {
   font-size: 14px;
 }
 
-/* ================= INPUTS ================= */
+/* ================= INPUTS (AUTH FIX INCLUDED) ================= */
 input,
 textarea,
 select {
@@ -145,12 +137,15 @@ select {
   transition: 0.2s ease;
 }
 
-input:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201,169,97,0.12);
+/* IMPORTANT: fixes auth pages feeling "plain" */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
 }
 
-/* ================= BUTTONS ================= */
+/* ================= BUTTONS (GLOBAL FIX) ================= */
 button,
 .btn {
   width: 100%;
@@ -158,10 +153,10 @@ button,
   padding: 12px 14px;
 
   border-radius: 10px;
-  border: 1px solid var(--gold);
+  border: none;
 
-  background: transparent;
-  color: var(--gold);
+  background: var(--primary);
+  color: white;
 
   font-weight: 600;
   cursor: pointer;
@@ -171,8 +166,19 @@ button,
 
 button:hover,
 .btn:hover {
-  background: rgba(201,169,97,0.12);
+  background: var(--primary-light);
   transform: translateY(-1px);
+}
+
+/* secondary button (auth pages often need this) */
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
 }
 
 /* ================= BADGES ================= */
@@ -190,62 +196,71 @@ button:hover,
 }
 
 .status-recommended {
-  color: #81c784;
-  border-color: #2e7d32;
-  background: rgba(46,125,50,0.1);
+  color: #16a34a;
+  background: #ecfdf5;
+  border-color: #bbf7d0;
 }
 
 .status-normal {
-  color: #fbc02d;
-  border-color: #f9a825;
-  background: rgba(249,168,37,0.1);
+  color: var(--primary);
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .status-weak {
-  color: #ffb74d;
-  border-color: #ef6c00;
-  background: rgba(239,108,0,0.1);
+  color: #f59e0b;
+  background: #fffbeb;
+  border-color: #fde68a;
 }
 
 .status-banned {
-  color: #ef5350;
-  border-color: #c62828;
-  background: rgba(198,40,40,0.1);
+  color: #ef4444;
+  background: #fef2f2;
+  border-color: #fecaca;
 }
 
 .verified-badge {
-  color: var(--gold);
-  border-color: var(--gold);
-  background: rgba(201,169,97,0.08);
+  color: var(--primary);
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 /* ================= MODAL ================= */
 .modal {
+  display: none;
   position: fixed;
   inset: 0;
-  display: none;
 
-  background: rgba(0,0,0,0.8);
+  background: rgba(15, 23, 42, 0.45);
+
   justify-content: center;
   align-items: center;
 }
 
 .modal-content {
   background: var(--surface);
-  padding: 24px;
   border-radius: var(--radius);
 
+  padding: 24px;
   width: 90%;
   max-width: 520px;
 
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-md);
 }
 
-/* ================= GRID ================= */
-#premiumVendors {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+/* ================= AUTH PAGES FIX ================= */
+.auth-container,
+.login-container,
+.register-container {
+  max-width: 420px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+/* makes auth feel premium, not basic */
+.auth-card {
+  padding: 28px;
+  border-radius: 14px;
 }
 
 /* ================= TOAST ================= */
@@ -255,13 +270,11 @@ button:hover,
   left: 50%;
   transform: translateX(-50%);
 
-  background: var(--surface);
-  color: var(--text);
+  background: #0f172a;
+  color: white;
 
   padding: 12px 16px;
   border-radius: 10px;
-
-  border: 1px solid var(--border);
 
   opacity: 0;
   transition: 0.2s ease;
@@ -271,7 +284,31 @@ button:hover,
   opacity: 1;
 }
 
-/* ================= MOBILE ================= */
+/* ================= PREMIUM GRID ================= */
+#premiumVendors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* ================= PREMIUM CARDS ================= */
+.premium-vendor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+
+  padding: 18px;
+
+  box-shadow: var(--shadow-sm);
+  transition: 0.2s ease;
+}
+
+.premium-vendor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ================= RESPONSIVE ================= */
 @media (max-width: 768px) {
   .container,
   main {
