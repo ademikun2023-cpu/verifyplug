@@ -5,22 +5,22 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-/* ================= ROOT (SaaS CLEAN) ================= */
+/* ================= ROOT ================= */
 :root {
-  --bg: #f6f8fc;
-  --card: #ffffff;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+
   --text: #0f172a;
   --muted: #64748b;
 
   --primary: #2563eb;
-  --primary-light: #4da3ff;
+  --primary-light: #3b82f6;
 
-  --gold: #d4af37;
+  --border: #e2e8f0;
 
-  --border: rgba(15, 23, 42, 0.08);
-
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-  --shadow-md: 0 6px 18px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.06);
 
   --radius: 12px;
 }
@@ -32,24 +32,27 @@ body {
   line-height: 1.6;
 }
 
-/* very light background noise only (no blur) */
+/* subtle background grid feel (premium SaaS trick) */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.015);
+  background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
   pointer-events: none;
 }
 
-/* ================= TOPBAR ================= */
+/* ================= HEADER ================= */
 .topbar {
-  width: 100%;
-  padding: 14px 24px;
-  background: rgba(255,255,255,0.9);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
+
   position: sticky;
   top: 0;
   z-index: 100;
@@ -59,14 +62,15 @@ body::before {
 .topbar h2,
 .topbar h3 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
-/* ================= CONTAINER ================= */
+/* ================= LAYOUT ================= */
 .container {
   max-width: 1100px;
   margin: auto;
-  padding: 30px 20px;
+  padding: 32px 20px;
 }
 
 /* ================= CARDS ================= */
@@ -75,14 +79,16 @@ body::before {
 .vendor-owner-card,
 .result-card,
 .admin-section {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+
   padding: 20px;
   margin-bottom: 16px;
 
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  transition: 0.2s ease;
 }
 
 .card:hover,
@@ -95,9 +101,22 @@ body::before {
 }
 
 /* ================= HEADINGS ================= */
-h1 { font-size: 32px; }
-h2 { font-size: 24px; }
-h3 { font-size: 18px; }
+h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+h2 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
 
 p {
   color: var(--muted);
@@ -109,39 +128,46 @@ input,
 textarea,
 select {
   width: 100%;
-  padding: 12px;
-  margin-top: 10px;
+  padding: 12px 14px;
+
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #fff;
+
+  background: var(--surface);
   color: var(--text);
+
   outline: none;
-  transition: 0.15s ease;
+  transition: 0.2s ease;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
 }
 
 /* ================= BUTTONS ================= */
 button {
   width: 100%;
   margin-top: 14px;
-  padding: 12px;
+  padding: 12px 14px;
+
   border-radius: 10px;
   border: none;
+
   background: var(--primary);
   color: white;
+
   font-weight: 600;
   cursor: pointer;
-  transition: 0.15s ease;
+
+  transition: 0.2s ease;
 }
 
 button:hover {
   background: var(--primary-light);
+  transform: translateY(-1px);
 }
 
 /* ================= BADGES ================= */
@@ -154,38 +180,39 @@ button:hover {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
+  font-weight: 600;
   border: 1px solid;
 }
 
 /* clean SaaS colors */
 .status-recommended {
   color: #16a34a;
-  background: rgba(22,163,74,0.08);
-  border-color: rgba(22,163,74,0.2);
+  background: #ecfdf5;
+  border-color: #bbf7d0;
 }
 
 .status-normal {
-  color: #2563eb;
-  background: rgba(37,99,235,0.08);
-  border-color: rgba(37,99,235,0.2);
+  color: var(--primary);
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .status-weak {
   color: #f59e0b;
-  background: rgba(245,158,11,0.08);
-  border-color: rgba(245,158,11,0.2);
+  background: #fffbeb;
+  border-color: #fde68a;
 }
 
 .status-banned {
   color: #ef4444;
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.2);
+  background: #fef2f2;
+  border-color: #fecaca;
 }
 
 .verified-badge {
   color: var(--primary);
-  background: rgba(37,99,235,0.08);
-  border-color: rgba(37,99,235,0.2);
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 /* ================= MODAL ================= */
@@ -193,17 +220,21 @@ button:hover {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.4);
+
   justify-content: center;
   align-items: center;
 }
 
 .modal-content {
-  background: #fff;
-  padding: 20px;
+  background: var(--surface);
+  padding: 24px;
   border-radius: var(--radius);
+
   width: 90%;
-  max-width: 500px;
+  max-width: 520px;
+
+  box-shadow: var(--shadow-md);
 }
 
 /* ================= TOAST ================= */
@@ -212,37 +243,49 @@ button:hover {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: #111;
+
+  background: #0f172a;
   color: white;
-  padding: 10px 14px;
+
+  padding: 12px 16px;
   border-radius: 10px;
+
   opacity: 0;
-  transition: 0.2s;
+  transition: 0.2s ease;
 }
 
 #toast.show {
   opacity: 1;
 }
 
-/* ================= PREMIUM SECTION ================= */
+/* ================= GRID ================= */
 #premiumVendors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
+/* ================= PREMIUM CARD ================= */
 .premium-vendor-card {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
-  padding: 16px;
   border-radius: var(--radius);
+
+  padding: 18px;
+
   box-shadow: var(--shadow-sm);
+  transition: 0.2s ease;
+}
+
+.premium-vendor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 768px) {
   .container {
-    padding: 18px;
+    padding: 20px 14px;
   }
 
   h1 { font-size: 26px; }
