@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Customer Dashboard</title>
+  <title>Customer Dashboard — VerifyPlug</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="/logo.png" type="image/png">
@@ -9,204 +10,114 @@
 
 <body>
 
-<div class="topbar">
-  VerifyPlug
-</div>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-seal"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#1a1505" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      VerifyPlug
+    </div>
+    <div class="topbar-tag">Customer Dashboard</div>
+  </div>
 
-<div class="container">
+  <div class="container">
 
-  <!-- HERO -->
-  <div class="hero-card">
+    <!-- HEADER -->
+    <div style="margin-bottom:28px;" class="reveal">
+      <h1 id="welcomeText">Hi Customer 👋</h1>
+      <p style="margin-top:8px;">Search vendors, verify trust scores, and avoid scams instantly.</p>
+    </div>
 
-    <div class="hero-logo">🔍</div>
+    <!-- QUICK SEARCH -->
+    <div class="card reveal" style="margin-bottom:18px;">
+      <div class="eyebrow" style="margin-bottom:12px;">Primary action</div>
+      <h2>Quick vendor search</h2>
+      <p style="margin:6px 0 8px;">Enter a vendor phone number to verify their trust score.</p>
 
-    <h1 id="welcomeText">Hi Customer 👋</h1>
+      <input id="searchInput" placeholder="e.g 08012345678">
+      <button onclick="searchVendor()">Verify vendor</button>
 
-    <p class="hero-sub">
-      Verify vendors before payment and avoid scams.
-    </p>
+      <div id="result" style="margin-top:16px;"></div>
+    </div>
 
-    <div class="stats-box">
-      <div class="stats-number" id="weeklySearches">0</div>
-      <div class="stats-label">
-        Vendors searched this week
+    <!-- STATS -->
+    <div class="grid reveal" style="margin-bottom:18px;">
+      <div class="card stat-card">
+        <h2 id="weeklySearches">0</h2>
+        <p>Vendors searched this week</p>
+      </div>
+      <div class="card stat-card">
+        <h2>Secure</h2>
+        <p>All checks are real-time</p>
+      </div>
+      <div class="card stat-card">
+        <h2>AI</h2>
+        <p>Risk scoring enabled</p>
       </div>
     </div>
 
-  </div>
+    <!-- PREMIUM VENDORS -->
+    <div class="card reveal" style="margin-bottom:18px;">
+      <h2>Trusted vendors</h2>
+      <p style="margin:6px 0;">Browse verified vendors by category.</p>
 
-  <!-- SEARCH -->
-  <div class="card">
+      <select id="premiumCategoryFilter" style="margin-top:12px;">
+        <option value="All">All Categories</option>
+        <option value="Gaming">Gaming</option>
+        <option value="Digital Services">Digital Services</option>
+        <option value="Physical Goods">Physical Goods</option>
+        <option value="Food & Drinks">Food & Drinks</option>
+        <option value="Fashion">Fashion</option>
+        <option value="Tech">Tech</option>
+        <option value="Crypto">Crypto</option>
+        <option value="VTU">VTU</option>
+        <option value="Logistics">Logistics</option>
+        <option value="Others">Others</option>
+      </select>
 
-    <h2>Search Vendor</h2>
+      <div id="premiumVendors" style="margin-top:16px;"></div>
+    </div>
 
-    <input
-      id="searchInput"
-      placeholder="Enter vendor phone number"
-    >
+    <!-- REPORT SCAM -->
+    <div class="card reveal">
+      <h2>Report a scam</h2>
+      <p style="margin:6px 0;">Help protect others by reporting suspicious vendors.</p>
 
-    <button onclick="searchVendor()">
-      Search
-    </button>
+      <input id="scamPhone" placeholder="Vendor phone number">
+      <input id="scamReason" placeholder="Reason">
 
-    <div id="result"></div>
-
-  </div>
-  <div class="premium-wrapper">
-
-  <div class="premium-section-title">
-    ⭐ Trusted Premium Vendors
-  </div>
-
-  <div class="premium-section-subtitle">
-    Browse trusted vendors by category
-  </div>
-
-  <select id="premiumCategoryFilter">
-
-    <option value="All">
-      All Categories
-    </option>
-
-    <option value="Gaming">
-      Gaming
-    </option>
-
-    <option value="Digital Services">
-      Digital Services
-    </option>
-
-    <option value="Physical Goods">
-      Physical Goods
-    </option>
-
-    <option value="Food & Drinks">
-      Food & Drinks
-    </option>
-
-    <option value="Fashion">
-      Fashion
-    </option>
-
-    <option value="Tech">
-      Tech
-    </option>
-
-    <option value="Crypto">
-      Crypto
-    </option>
-
-    <option value="VTU">
-      VTU
-    </option>
-
-    <option value="Logistics">
-      Logistics
-    </option>
-
-    <option value="Others">
-      Others
-    </option>
-
-  </select>
-
-  <div id="premiumVendors"></div>
-
-</div>
-  <!-- REPORT SCAM -->
-  <div class="card">
-
-    <h2>Report Scam</h2>
-
-    <input
-      id="scamPhone"
-      placeholder="Vendor phone number"
-    >
-
-    <input
-      id="scamReason"
-      placeholder="Reason"
-    >
-
-    <button onclick="reportScam()">
-      Report Scam
-    </button>
-
-  </div>
-
-</div>
-<!-- TOAST -->
-<div id="toast"></div>
-<!-- REVIEW MODAL -->
-<div id="reviewModal" class="modal">
-
-  <div class="modal-content">
-
-    <h2>Share Your Experience</h2>
-
-    <!-- RATING -->
-    <input
-      type="number"
-      id="reviewRating"
-      placeholder="Rate vendor (1-10)"
-      min="1"
-      max="10"
-    >
-
-    <!-- PURCHASE CODE -->
-    <input
-      id="purchaseCode"
-      placeholder="Purchase Code (optional)"
-    >
-
-    <!-- PROS -->
-    <textarea
-      id="reviewPros"
-      placeholder="What went well?"
-    ></textarea>
-
-    <!-- CONS -->
-    <textarea
-      id="reviewCons"
-      placeholder="Anything they could improve?"
-    ></textarea>
-
-    <div class="modal-buttons">
-
-      <button onclick="submitReview()">
-        Submit Review
-      </button>
-
-      <button onclick="closeReviewModal()">
-        Cancel
-      </button>
-
+      <button onclick="reportScam()">Submit report</button>
     </div>
 
   </div>
 
-</div>
-<!-- REVIEWS MODAL -->
-<div id="reviewsModal" class="modal">
+  <!-- REVIEW MODAL -->
+  <div id="reviewModal" class="modal">
+    <div class="modal-content">
+      <h2>Share your experience</h2>
+      <p style="margin-bottom:10px;">Add a purchase code if you have one to mark your review as verified.</p>
 
-  <div class="modal-content">
+      <input type="number" id="reviewRating" placeholder="Rating (1-10)" min="1" max="10">
+      <input id="purchaseCode" placeholder="Purchase code (optional)">
+      <textarea id="reviewPros" placeholder="What went well?"></textarea>
+      <textarea id="reviewCons" placeholder="What could improve?"></textarea>
 
-    <h2>Customer Reviews</h2>
-
-    <div id="reviewsContainer"></div>
-
-    <div class="modal-buttons">
-
-      <button onclick="closeReviewsModal()">
-        Close
-      </button>
-
+      <button onclick="submitReview()">Submit review</button>
+      <button onclick="closeReviewModal()" class="btn-secondary">Cancel</button>
     </div>
-
   </div>
 
-</div>
-<script type="module" src="./app.js"></script>
+  <!-- REVIEWS MODAL -->
+  <div id="reviewsModal" class="modal">
+    <div class="modal-content">
+      <h2>Customer reviews</h2>
+      <div id="reviewsContainer" style="margin-top:12px;"></div>
+      <button onclick="closeReviewsModal()" class="btn-secondary">Close</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module" src="./app.js"></script>
 
 </body>
 </html>

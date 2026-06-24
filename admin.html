@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>VerifyPlug Admin</title>
-
+  <title>VerifyPlug — Admin</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="/logo.png" type="image/png">
 </head>
@@ -13,27 +12,38 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
-    VerifyPlug Admin Dashboard
+    <div class="brand">
+      <span class="brand-seal"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#1a1505" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      VerifyPlug
+    </div>
+    <div class="topbar-tag">Admin Control Panel</div>
   </div>
 
-  <!-- MAIN ADMIN LAYOUT -->
-  <div class="admin-layout">
+  <div class="container">
 
-    <!-- SCAM REPORTS -->
-    <div class="admin-section">
-
-      <h2>🚨 Scam Reports</h2>
-
-      <div id="reportsList"></div>
-
+    <!-- HEADER -->
+    <div style="margin-bottom:26px;" class="reveal">
+      <div class="eyebrow" style="margin-bottom:14px;">Platform safety</div>
+      <h1>Admin Dashboard</h1>
+      <p style="margin-top:8px;">Monitor platform safety, review reports, and manage vendors.</p>
     </div>
 
-    <!-- VENDORS -->
-    <div class="admin-section">
+    <!-- TWO-PANEL LAYOUT -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;" class="admin-grid reveal">
 
-      <h2>🏪 Vendors</h2>
+      <!-- SCAM REPORTS -->
+      <div class="card">
+        <h2>🚨 Scam reports queue</h2>
+        <p style="margin:6px 0 14px;">Pending user-submitted reports.</p>
+        <div id="reportsList"></div>
+      </div>
 
-      <div id="vendorList"></div>
+      <!-- VENDORS -->
+      <div class="card">
+        <h2>🏪 Vendor database</h2>
+        <p style="margin:6px 0 14px;">Manage and moderate registered vendors.</p>
+        <div id="vendorList"></div>
+      </div>
 
     </div>
 
@@ -41,35 +51,38 @@
 
   <!-- REPORT MODAL -->
   <div id="reportModal" class="modal">
-
     <div class="modal-content">
+      <h2>Report details</h2>
 
-      <h2>Report Details</h2>
-
-      <p id="modalPhone"></p>
-
-      <p id="modalReason"></p>
-
-      <p id="modalEmail"></p>
-
-      <div class="modal-buttons">
-
-        <button onclick="banVendorFromReport()">
-          Ban Vendor
-        </button>
-
-        <button onclick="closeModal()">
-          Close
-        </button>
-
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label>Phone</label>
+          <p id="modalPhone" style="color:var(--text);font-weight:500;margin-top:4px;"></p>
+        </div>
+        <div>
+          <label>Reason</label>
+          <p id="modalReason" style="color:var(--text);margin-top:4px;"></p>
+        </div>
+        <div>
+          <label>Reported by</label>
+          <p id="modalEmail" style="color:var(--muted);margin-top:4px;"></p>
+        </div>
       </div>
 
+      <div style="margin-top:20px;">
+        <button onclick="banVendorFromReport()">Ban vendor</button>
+        <button onclick="closeModal()" class="btn-secondary">Close</button>
+      </div>
     </div>
-
   </div>
-<!-- TOAST -->
-<div id="toast"></div>
+
+  <div id="toast"></div>
+
   <script type="module" src="./app.js"></script>
+
+  <style>
+    @media(max-width:680px){ .admin-grid{grid-template-columns:1fr !important;} }
+  </style>
 
 </body>
 </html>

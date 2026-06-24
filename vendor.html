@@ -1,118 +1,110 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Vendor Dashboard</title>
+  <title>Vendor Dashboard — VerifyPlug</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="/logo.png" type="image/png">
 </head>
 
 <body>
 
-<div class="topbar">
-  VerifyPlug Vendor
-</div>
-
-<!-- 🚫 BAN SCREEN (NEW) -->
-<div id="banScreen" style="display:none; text-align:center; padding:50px;">
-  <h1 style="color:red;">🚫 ACCOUNT BANNED</h1>
-  <p>Your account has been banned due to unethical business practices.</p>
-  <p>You can no longer access VerifyPlug services.</p>
-</div>
-
-<!-- STATUS -->
-<div class="status-wrapper">
-  <div id="statusDot" class="status-dot"></div>
-  <span id="statusText">Not Verified</span>
-</div>
-
-<!-- ✅ MAIN CONTAINER -->
-<div class="container" id="mainContainer">
-
-  <!-- ADD BUSINESS FORM -->
-  <div class="card" id="vendorForm">
-
-    <h2>Add Your Business</h2>
-
-    <input id="vendorName" placeholder="Business Name">
-    <input id="vendorPhone" placeholder="Phone Number">
-    <input id="vendorLocation" placeholder="Location">
-    <select id="vendorCategory">
-
-  <option value="">Select Business Category</option>
-
-  <option value="Gaming">Gaming</option>
-
-  <option value="Digital Services">Digital Services</option>
-
-  <option value="Physical Goods">Physical Goods</option>
-
-  <option value="Food & Drinks">Food & Drinks</option>
-
-  <option value="Fashion">Fashion</option>
-
-  <option value="Tech">Tech</option>
-
-  <option value="Crypto">Crypto</option>
-
-  <option value="VTU">VTU</option>
-
-  <option value="Logistics">Logistics</option>
-
-  <option value="Others">Others</option>
-
-</select>
-    <button onclick="addVendor()">
-      Add Business
-    </button>
-
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-seal"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#1a1505" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      VerifyPlug
+    </div>
+    <div class="topbar-tag">Vendor Console</div>
   </div>
 
-  <!-- DASHBOARD -->
-  <div class="card" id="vendorDashboard" style="display:none;">
+  <!-- BANNED STATE -->
+  <div id="banScreen" style="display:none;">
+    <h1>Account suspended</h1>
+    <p>Your account has been restricted due to policy violations.</p>
+  </div>
 
-    <h2 id="welcomeText">Hi Vendor 👋</h2>
+  <!-- MAIN WRAPPER -->
+  <div class="container" id="mainContainer">
 
-    <div>
-      <b>Trust Score</b>
-      <div class="trust-bar">
-        <div class="trust-fill" id="trustFill"></div>
+    <!-- HEADER -->
+    <div style="margin-bottom:24px;" class="reveal">
+      <h1 id="welcomeText">Vendor Dashboard</h1>
+      <p style="margin-top:8px;">Manage your business, track trust score, and grow visibility.</p>
+    </div>
+
+    <!-- ONBOARDING CARD -->
+    <div class="card reveal" id="vendorForm" style="margin-bottom:20px;">
+      <div class="eyebrow" style="margin-bottom:12px;">Get started</div>
+      <h2>Business setup</h2>
+      <p style="margin:6px 0 8px;">Add your business to start building your trust score.</p>
+
+      <input id="vendorName" placeholder="Business name">
+      <input id="vendorPhone" placeholder="Phone number">
+      <input id="vendorLocation" placeholder="Location">
+
+      <select id="vendorCategory">
+        <option value="">Select category</option>
+        <option value="Gaming">Gaming</option>
+        <option value="Digital Services">Digital Services</option>
+        <option value="Physical Goods">Physical Goods</option>
+        <option value="Food & Drinks">Food & Drinks</option>
+        <option value="Fashion">Fashion</option>
+        <option value="Tech">Tech</option>
+        <option value="Crypto">Crypto</option>
+        <option value="VTU">VTU</option>
+        <option value="Logistics">Logistics</option>
+        <option value="Others">Others</option>
+      </select>
+
+      <button onclick="addVendor()">Create business profile</button>
+    </div>
+
+    <!-- DASHBOARD (rendered by app.js) -->
+    <div id="vendorDashboard" style="display:none;">
+
+      <!-- fallback static structure (replaced on load) -->
+      <div class="card" style="margin-bottom:20px;">
+        <h2>Trust score</h2>
+        <div style="margin-top:12px;">
+          <div class="meter"><div id="trustFill"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <small id="trustText" style="color:var(--muted);">0%</small>
+            <span id="statusText" style="font-size:12px;color:var(--gold-deep);font-weight:600;">Not Verified</span>
+          </div>
+        </div>
       </div>
-      <small id="trustText">0%</small>
-    </div>
 
-    <div>
-      <b>Total Searches</b>
-      <h1 id="searchCount">0</h1>
-    </div>
+      <div class="grid" style="margin-bottom:20px;">
+        <div class="card stat-card"><h2 id="searchCount">0</h2><p>Total searches</p></div>
+        <div class="card stat-card"><h2>Active</h2><p>Business status</p></div>
+        <div class="card stat-card"><h2>Secure</h2><p>Verification system</p></div>
+      </div>
 
-    <button id="verifyBtn">
-      Pay ₦5,000 For Verification
-    </button>
-
-  </div>
-
-</div>
-<div id="reviewsModal" class="modal">
-
-  <div class="modal-content">
-
-    <h2>Vendor Reviews</h2>
-
-    <div id="reviewsContainer"></div>
-
-    <div class="modal-buttons">
-
-      <button onclick="closeReviewsModal()">
-        Close
-      </button>
+      <div class="card">
+        <h2>Verification</h2>
+        <p style="margin:6px 0;">Get verified to increase trust score and visibility.</p>
+        <button id="verifyBtn">Upgrade to Verified (₦5,000)</button>
+      </div>
 
     </div>
 
   </div>
-<!-- TOAST -->
-<div id="toast"></div>
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script type="module" src="./app.js"></script>
+
+  <!-- REVIEWS MODAL -->
+  <div id="reviewsModal" class="modal">
+    <div class="modal-content">
+      <h2>Vendor reviews</h2>
+      <div id="reviewsContainer" style="margin-top:12px;"></div>
+      <button onclick="closeReviewsModal()" class="btn-secondary">Close</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script type="module" src="./app.js"></script>
 
 </body>
 </html>
