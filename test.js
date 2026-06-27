@@ -213,7 +213,7 @@ window.reportScam = async function () {
 // ==========================
 window.payForVerification = function (vendorId, email) {
   let handler = PaystackPop.setup({
-    key: "pk_test_efbb2bdcd089cefcb6bb2c7aa7677fed9c173ad9",
+    key: "pk_live_051922fbc194c192821f256f14ccab760e3fb35d",
     email,
     amount: 10000 * 100,
     currency: "NGN",
