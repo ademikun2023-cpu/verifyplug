@@ -1262,6 +1262,8 @@ window.openEditProfile = async function (id) {
   if (!snap.exists()) { showToast("Vendor not found", "error"); return; }
 
   const d = snap.data();
+      document.title = `${d.name || "Vendor"} — VerifyPlug`;
+      const trust = d.trustScore ?? 50;
 
   // 30-day gate (soft client guard — back it with security rules for real enforcement)
   const last = d.lastProfileEdit || 0;
