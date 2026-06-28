@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vendor Profile — VerifyPlug</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="icon" href="/logo.png" type="image/png">
+  <style>
+    .socials{display:flex;gap:12px;justify-content:center;margin-top:20px}
+    .social-link{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+      border:1px solid var(--gold-line);background:var(--gold-soft);color:var(--gold-deep);
+      font-size:19px;text-decoration:none;transition:.2s}
+    .social-link:hover{background:var(--gold);color:#1a1505;transform:translateY(-2px)}
+  </style>
 </head>
 
 <body>
@@ -55,6 +63,30 @@
     }
 
     function card(html) { return `<div class="card reveal">${html}</div>`; }
+
+    // turn handles/numbers into safe outbound links
+    function buildSocialLinks(s = {}) {
+      const L = {};
+      const handle = v => (v || "").trim()
+        .replace(/^@/, "")
+        .replace(/^https?:\/\/(www\.)?[^/]+\//, "")
+        .replace(/[^A-Za-z0-9._]/g, "");
+      let wa = (s.whatsapp || "").replace(/[^\d]/g, "");
+      if (wa) { if (wa.startsWith("0")) wa = "234" + wa.slice(1); L.whatsapp = "https://wa.me/" + wa; }
+      const ig = handle(s.instagram); if (ig) L.instagram = "https://instagram.com/" + ig;
+      const tt = handle(s.tiktok);    if (tt) L.tiktok = "https://tiktok.com/@" + tt;
+      const x  = handle(s.x);         if (x)  L.x = "https://x.com/" + x;
+      return L;
+    }
+
+    function socialIcons(s) {
+      const L = buildSocialLinks(s || {});
+      const map = [["whatsapp","fa-whatsapp"],["instagram","fa-instagram"],["tiktok","fa-tiktok"],["x","fa-x-twitter"]];
+      const items = map.filter(([k]) => L[k])
+        .map(([k,ic]) => `<a class="social-link" href="${L[k]}" target="_blank" rel="noopener noreferrer" aria-label="${k}"><i class="fa-brands ${ic}"></i></a>`)
+        .join("");
+      return items ? `<div class="socials">${items}</div>` : "";
+    }
 
     async function load() {
 
@@ -134,6 +166,7 @@
             <p>🧾 ${d.location || "—"}</p>
             <p>⭐ Average rating: ${d.averageRating || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</p>
           </div>
+          ${socialIcons(d.socials)}
         </div>
 
         <div class="card reveal" style="margin-top:16px;">

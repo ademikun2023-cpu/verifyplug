@@ -305,6 +305,14 @@ window.addVendor = async function () {
   const vendorLocation = document.getElementById("vendorLocation").value.trim();
   const vendorCategory = document.getElementById("vendorCategory").value;
 
+  // optional socials (handles / WhatsApp number)
+  const socials = {
+    whatsapp:  document.getElementById("vendorWhatsapp")?.value.trim()  || "",
+    instagram: document.getElementById("vendorInstagram")?.value.trim() || "",
+    tiktok:    document.getElementById("vendorTiktok")?.value.trim()    || "",
+    x:         document.getElementById("vendorX")?.value.trim()         || ""
+  };
+
   if (!vendorName || !vendorPhone || !vendorLocation || !vendorCategory) {
     showToast("Please fill all fields", "warning");
     return;
@@ -337,6 +345,7 @@ window.addVendor = async function () {
       averageRating: 0,
       searchCount: 0,
       purchaseCodes: [],
+      socials,
       createdBy: user.email,
       createdAt: Date.now()
     }
@@ -690,6 +699,7 @@ window.loadVendorDashboard = async function () {
           ${!data.verified ? `<button onclick="payForVerification('${docItem.id}', '${user.email}')" class="btn-secondary">Get Verified (₦5,000)</button>` : ""}
           <button onclick="viewReviews('${docItem.id}')" class="btn-secondary">View Reviews</button>
           <button onclick="copyLink('${docItem.id}')" class="btn-secondary">Copy my profile link</button>
+          <button onclick="openEditProfile('${docItem.id}')" class="btn-secondary">Edit profile</button>
         </div>
 
         <div class="codes-wrap">
@@ -1182,5 +1192,77 @@ window.copyLink = function (id) {
       .catch(() => showToast(url, "success"));
   } else {
     showToast(url, "success");
+  }
+};
+
+// ===============================
+// EDIT PROFILE (once every 30 days)
+// ===============================
+let editingVendorId = null;
+
+window.openEditProfile = async function (id) {
+
+  const snap = await getDoc(doc(db, "vendors", id));
+  if (!snap.exists()) { showToast("Vendor not found", "error"); return; }
+
+  const d = snap.data();
+
+  // 30-day gate (soft client guard — back it with security rules for real enforcement)
+  const last = d.lastProfileEdit || 0;
+  const days = (Date.now() - last) / 86400000;
+  if (last && days < 30) {
+    showToast(`You can edit again in ${Math.ceil(30 - days)} day(s)`, "warning");
+    return;
+  }
+
+  editingVendorId = id;
+
+  const s = d.socials || {};
+  document.getElementById("editName").value = d.name || "";
+  document.getElementById("editLocation").value = d.location || "";
+  document.getElementById("editCategory").value = d.category || "";
+  document.getElementById("editWhatsapp").value = s.whatsapp || "";
+  document.getElementById("editInstagram").value = s.instagram || "";
+  document.getElementById("editTiktok").value = s.tiktok || "";
+  document.getElementById("editX").value = s.x || "";
+
+  document.getElementById("editModal").style.display = "flex";
+};
+
+window.closeEditProfile = function () {
+  document.getElementById("editModal").style.display = "none";
+};
+
+window.updateVendor = async function () {
+
+  if (!editingVendorId) return;
+
+  const name = document.getElementById("editName").value.trim();
+  const location = document.getElementById("editLocation").value.trim();
+  const category = document.getElementById("editCategory").value;
+
+  if (!name || !location || !category) {
+    showToast("Name, location and category are required", "warning");
+    return;
+  }
+
+  const socials = {
+    whatsapp:  document.getElementById("editWhatsapp").value.trim(),
+    instagram: document.getElementById("editInstagram").value.trim(),
+    tiktok:    document.getElementById("editTiktok").value.trim(),
+    x:         document.getElementById("editX").value.trim()
+  };
+
+  try {
+    await updateDoc(doc(db, "vendors", editingVendorId), {
+      name, location, category, socials,
+      lastProfileEdit: Date.now()
+    });
+    showToast("Profile updated ✔", "success");
+    closeEditProfile();
+    setTimeout(loadVendorDashboard, 600);
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to update profile", "error");
   }
 };
