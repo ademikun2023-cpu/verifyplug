@@ -284,3 +284,16 @@ a.btn,a.btn-secondary{display:inline-flex;align-items:center;justify-content:cen
   .container{padding:28px 16px 60px}
   .topbar{padding:13px 16px}
 }
+/* ===== File upload button ===== */
+.file-upload{
+  display:inline-flex;align-items:center;gap:10px;
+  width:100%;margin-top:8px;padding:13px 16px;
+  border:1px dashed var(--border-strong);border-radius:var(--r-sm);
+  background:var(--surface-2);color:var(--muted);
+  font-size:14px;font-weight:500;cursor:pointer;
+  transition:.18s;
+}
+.file-upload:hover{border-color:var(--gold);color:var(--text);background:var(--gold-soft)}
+.file-upload svg{width:18px;height:18px;color:var(--gold-deep);flex:0 0 auto}
+.file-upload input[type="file"]{display:none}
+.file-upload .file-name{font-size:13px;color:var(--faint);margin-left:auto}
