@@ -58,6 +58,12 @@
         <option value="Others">Others</option>
       </select>
 
+      <!-- socials (optional) -->
+      <input id="vendorWhatsapp" placeholder="WhatsApp number (optional)">
+      <input id="vendorInstagram" placeholder="Instagram handle (optional)">
+      <input id="vendorTiktok" placeholder="TikTok handle (optional)">
+      <input id="vendorX" placeholder="X (Twitter) handle (optional)">
+
       <button onclick="addVendor()">Create business profile</button>
     </div>
 
@@ -98,6 +104,44 @@
       <h2>Vendor reviews</h2>
       <div id="reviewsContainer" style="margin-top:12px;"></div>
       <button onclick="closeReviewsModal()" class="btn-secondary">Close</button>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit profile</h2>
+      <p style="margin-bottom:10px;">You can edit once every 30 days. Phone number can't be changed here — contact support.</p>
+
+      <label>Business name</label>
+      <input id="editName">
+      <label>Location</label>
+      <input id="editLocation">
+      <label>Category</label>
+      <select id="editCategory">
+        <option value="">Select category</option>
+        <option value="Gaming">Gaming</option>
+        <option value="Digital Services">Digital Services</option>
+        <option value="Physical Goods">Physical Goods</option>
+        <option value="Food & Drinks">Food & Drinks</option>
+        <option value="Fashion">Fashion</option>
+        <option value="Tech">Tech</option>
+        <option value="Crypto">Crypto</option>
+        <option value="VTU">VTU</option>
+        <option value="Logistics">Logistics</option>
+        <option value="Others">Others</option>
+      </select>
+      <label>WhatsApp number</label>
+      <input id="editWhatsapp" placeholder="08012345678">
+      <label>Instagram handle</label>
+      <input id="editInstagram" placeholder="yourbrand">
+      <label>TikTok handle</label>
+      <input id="editTiktok" placeholder="yourbrand">
+      <label>X (Twitter) handle</label>
+      <input id="editX" placeholder="yourbrand">
+
+      <button onclick="updateVendor()">Save changes</button>
+      <button onclick="closeEditProfile()" class="btn-secondary">Cancel</button>
     </div>
   </div>
 
