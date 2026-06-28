@@ -689,6 +689,7 @@ window.loadVendorDashboard = async function () {
           <button onclick="generatePurchaseCode('${docItem.id}')">Generate Purchase Code</button>
           ${!data.verified ? `<button onclick="payForVerification('${docItem.id}', '${user.email}')" class="btn-secondary">Get Verified (₦5,000)</button>` : ""}
           <button onclick="viewReviews('${docItem.id}')" class="btn-secondary">View Reviews</button>
+          <button onclick="copyLink('${docItem.id}')" class="btn-secondary">Copy my profile link</button>
         </div>
 
         <div class="codes-wrap">
@@ -1173,3 +1174,13 @@ const premiumFilterEl = document.getElementById("premiumCategoryFilter");
 if (premiumFilterEl) {
   premiumFilterEl.addEventListener("change", () => { loadPremiumVendors(); });
 }
+window.copyLink = function (id) {
+  const url = `${location.origin}/v.html?id=${id}`;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast("Your link is copied ✔", "success"))
+      .catch(() => showToast(url, "success"));
+  } else {
+    showToast(url, "success");
+  }
+};

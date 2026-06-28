@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Profile — VerifyPlug</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="/logo.png" type="image/png">
+</head>
+
+<body>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <a href="index.html" class="brand">
+      <span class="brand-seal"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#1a1505" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      VerifyPlug
+    </a>
+    <a href="auth.html" class="topbar-tag">Sign in</a>
+  </div>
+
+  <div class="container" style="max-width:620px;">
+    <div id="profile">
+      <div class="card"><p>Loading vendor…</p></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, getDocs }
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFkCQI646z0NTyKZB1ZL7D5EYZuxGTSlY",
+      authDomain: "verifyplug-a28d6.firebaseapp.com",
+      projectId: "verifyplug-a28d6",
+      storageBucket: "verifyplug-a28d6.firebasestorage.app",
+      messagingSenderId: "244761045495",
+      appId: "1:244761045495:web:4c2f0091a7a46a7272e6f2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const box = document.getElementById("profile");
+
+    function getVendorStatus(s) {
+      if (s >= 90) return { label: "Highly Recommended", className: "status-recommended" };
+      if (s >= 70) return { label: "Trusted Vendor", className: "status-trusted" };
+      if (s >= 50) return { label: "Normal Vendor", className: "status-normal" };
+      if (s >= 21) return { label: "Risky Vendor", className: "status-weak" };
+      return { label: "Banned Vendor", className: "status-banned" };
+    }
+
+    function card(html) { return `<div class="card reveal">${html}</div>`; }
+
+    async function load() {
+
+      const id = new URLSearchParams(location.search).get("id");
+
+      if (!id) {
+        box.innerHTML = card(`<h2>Invalid link</h2><p>No vendor was specified.</p>
+          <a href="auth.html" class="btn" style="margin-top:14px;">Verify a vendor</a>`);
+        return;
+      }
+
+      let snap;
+      try {
+        snap = await getDoc(doc(db, "vendors", id));
+      } catch (e) {
+        box.innerHTML = card(`<h2>Couldn’t load profile</h2><p>Please try again later.</p>`);
+        return;
+      }
+
+      if (!snap.exists()) {
+        box.innerHTML = card(`<h2>Vendor not found</h2>
+          <p>This vendor isn’t on VerifyPlug yet.</p>
+          <a href="auth.html" class="btn" style="margin-top:14px;">Verify another vendor</a>`);
+        return;
+      }
+
+      const d = snap.data();
+      const trust = d.trustScore ?? 50;
+      const status = getVendorStatus(trust);
+      const verified = d.verified === true && d.banned !== true;
+
+      // BANNED — warn the buyer loudly
+      if (d.banned === true) {
+        box.innerHTML = card(`
+          <div class="badges"><span class="status-banned">🚫 Restricted</span></div>
+          <h2 style="margin-top:12px;">${d.name || "This vendor"}</h2>
+          <p style="color:var(--red);font-weight:500;margin-top:8px;">
+            This vendor has been flagged and restricted for policy violations. Do not send money.
+          </p>
+          <a href="auth.html" class="btn" style="margin-top:16px;">Check a safer vendor</a>
+        `);
+        return;
+      }
+
+      // Reviews (public read)
+      let reviewsHtml = `<p class="muted-text">No reviews yet.</p>`;
+      let reviewCount = 0;
+      try {
+        const rs = await getDocs(collection(db, "vendors", id, "reviews"));
+        reviewCount = rs.size;
+        if (!rs.empty) {
+          reviewsHtml = "";
+          rs.forEach(r => {
+            const rv = r.data();
+            reviewsHtml += `
+              <div class="result-card">
+                <h3>⭐ ${rv.rating}/10 ${rv.verifiedPurchase ? "· ✅ Verified" : ""}</h3>
+                <p style="margin-top:6px;"><b>Pros:</b> ${rv.pros || "—"}</p>
+                <p style="margin-top:4px;"><b>Cons:</b> ${rv.cons || "—"}</p>
+              </div>`;
+          });
+        }
+      } catch (e) { /* reviews stay as "none" if rules block */ }
+
+      box.innerHTML = `
+        <div class="card reveal" style="text-align:center;">
+          <div class="trust-ring" style="--p:${trust}">
+            <div class="inner"><b>${trust}%</b><span>Trust</span></div>
+          </div>
+          <h1 style="font-size:30px;margin-top:6px;">${d.name || "Vendor"}</h1>
+          <div class="badges" style="justify-content:center;margin-top:12px;">
+            <span class="${status.className}">${status.label}</span>
+            ${verified ? `<span class="verified-badge">✅ Verified</span>` : ""}
+          </div>
+          <div style="margin-top:18px;text-align:left;">
+            <p>📂 ${d.category || "—"}</p>
+            <p>🧾 ${d.location || "—"}</p>
+            <p>⭐ Average rating: ${d.averageRating || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+
+        <div class="card reveal" style="margin-top:16px;">
+          <h2>Reviews</h2>
+          <div style="margin-top:12px;">${reviewsHtml}</div>
+        </div>
+
+        <div class="card reveal" style="margin-top:16px;text-align:center;">
+          <h3>About to buy from someone?</h3>
+          <p style="margin:6px 0 0;">Check any vendor’s trust score before you pay.</p>
+          <a href="auth.html" class="btn" style="margin-top:14px;">Verify a vendor</a>
+        </div>
+      `;
+    }
+
+    load();
+  </script>
+</body>
+</html>
