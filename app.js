@@ -37,6 +37,48 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// ===== Cloudinary (free image hosting — no server, no card) =====
+// 1) make a free account at cloudinary.com
+// 2) copy your "Cloud name" below
+// 3) Settings > Upload > add an UNSIGNED upload preset and put its name below
+const CLOUDINARY_CLOUD  = "YOUR_CLOUD_NAME";       // <-- replace
+const CLOUDINARY_PRESET = "verifyplug_unsigned";   // <-- replace if you named it differently
+
+// shrink the image in the browser first (saves the vendor's data + your quota)
+function resizeImage(file, maxDim = 600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const img = new Image();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = height * maxDim / width; width = maxDim; }
+      else if (height > maxDim) { width = width * maxDim / height; height = maxDim; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error("resize failed")), "image/jpeg", quality);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// upload to Cloudinary (unsigned), returns the hosted image URL
+async function uploadVendorPhoto(file) {
+  const blob = await resizeImage(file);
+  const form = new FormData();
+  form.append("file", blob);
+  form.append("upload_preset", CLOUDINARY_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: "POST", body: form
+  });
+  if (!res.ok) throw new Error("upload failed");
+  const data = await res.json();
+  return data.secure_url;
+}
+
 let vendorCache = null;
 let vendorCacheTime = 0;
 
@@ -332,6 +374,19 @@ window.addVendor = async function () {
     return;
   }
 
+  // optional business photo / logo
+  let photoURL = "";
+  const photoFile = document.getElementById("vendorPhoto")?.files?.[0];
+  if (photoFile) {
+    try {
+      showToast("Uploading photo…", "success");
+      photoURL = await uploadVendorPhoto(photoFile);
+    } catch (e) {
+      console.error(e);
+      showToast("Photo upload failed — saving without it", "warning");
+    }
+  }
+
   await addDoc(
     collection(db, "vendors"),
     {
@@ -346,6 +401,7 @@ window.addVendor = async function () {
       searchCount: 0,
       purchaseCodes: [],
       socials,
+      photoURL,
       createdBy: user.email,
       createdAt: Date.now()
     }
@@ -1253,11 +1309,22 @@ window.updateVendor = async function () {
     x:         document.getElementById("editX").value.trim()
   };
 
+  const updates = { name, location, category, socials, lastProfileEdit: Date.now() };
+
+  // optional new photo
+  const editPhotoFile = document.getElementById("editPhoto")?.files?.[0];
+  if (editPhotoFile) {
+    try {
+      showToast("Uploading photo…", "success");
+      updates.photoURL = await uploadVendorPhoto(editPhotoFile);
+    } catch (e) {
+      console.error(e);
+      showToast("Photo upload failed", "warning");
+    }
+  }
+
   try {
-    await updateDoc(doc(db, "vendors", editingVendorId), {
-      name, location, category, socials,
-      lastProfileEdit: Date.now()
-    });
+    await updateDoc(doc(db, "vendors", editingVendorId), updates);
     showToast("Profile updated ✔", "success");
     closeEditProfile();
     setTimeout(loadVendorDashboard, 600);

@@ -64,6 +64,10 @@
       <input id="vendorTiktok" placeholder="TikTok handle (optional)">
       <input id="vendorX" placeholder="X (Twitter) handle (optional)">
 
+      <!-- business photo / logo (optional) -->
+      <label style="margin-top:10px;">Business photo / logo (optional)</label>
+      <input type="file" id="vendorPhoto" accept="image/*">
+
       <button onclick="addVendor()">Create business profile</button>
     </div>
 
@@ -139,6 +143,8 @@
       <input id="editTiktok" placeholder="yourbrand">
       <label>X (Twitter) handle</label>
       <input id="editX" placeholder="yourbrand">
+      <label>Change photo / logo</label>
+      <input type="file" id="editPhoto" accept="image/*">
 
       <button onclick="updateVendor()">Save changes</button>
       <button onclick="closeEditProfile()" class="btn-secondary">Cancel</button>
