@@ -1261,7 +1261,7 @@ window.openEditProfile = async function (id) {
   const snap = await getDoc(doc(db, "vendors", id));
   if (!snap.exists()) { showToast("Vendor not found", "error"); return; }
 
-  const d = snap.data();
+const d = snap.data();
       document.title = `${d.name || "Vendor"} — VerifyPlug`;
       const trust = d.trustScore ?? 50;
 

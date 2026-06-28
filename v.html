@@ -118,6 +118,7 @@
       }
 
       const d = snap.data();
+      document.title = `${d.name || "Vendor"} — VerifyPlug`;
       const trust = d.trustScore ?? 50;
       const status = getVendorStatus(trust);
       const verified = d.verified === true && d.banned !== true;
