@@ -41,8 +41,10 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, collection, getDocs }
+    import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where }
       from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAFkCQI646z0NTyKZB1ZL7D5EYZuxGTSlY",
@@ -55,8 +57,34 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     const box = document.getElementById("profile");
+
+    // state shared between load() and the review submit
+    let currentUser = null;
+    let vendorData = null;
+    let vendorId = null;
+
+    onAuthStateChanged(auth, u => { currentUser = u; });
+
+    // ---------- small helpers ----------
+    function showToast(msg, type = "success") {
+      let t = document.getElementById("toast");
+      if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }
+      t.textContent = msg;
+      t.className = "";
+      t.classList.add(type, "show");
+      clearTimeout(window._tt);
+      window._tt = setTimeout(() => t.classList.remove("show"), 3200);
+    }
+
+    function getDeviceId() {
+      let id = localStorage.getItem("deviceId");
+      if (!id) { id = crypto.randomUUID(); localStorage.setItem("deviceId", id); }
+      return id;
+    }
+    const deviceId = getDeviceId();
 
     function getVendorStatus(s) {
       if (s >= 90) return { label: "Highly Recommended", className: "status-recommended" };
@@ -92,9 +120,66 @@
       return items ? `<div class="socials">${items}</div>` : "";
     }
 
+    function ratingOptions() {
+      let o = `<option value="">Select…</option>`;
+      for (let i = 10; i >= 1; i--) o += `<option value="${i}">${i}/10</option>`;
+      return o;
+    }
+
+    // ---------- submit a review (auth-gated) ----------
+    window.submitProfileReview = async function () {
+      const rating = Number(document.getElementById("revRating").value);
+      const pros = document.getElementById("revPros").value.trim();
+      const cons = document.getElementById("revCons").value.trim();
+      const code = document.getElementById("revCode").value.trim();
+
+      if (!rating) { showToast("Pick a rating first", "warning"); return; }
+
+      // not logged in → save their draft and ask them to sign in
+      if (!currentUser) {
+        localStorage.setItem("vp_review_draft_" + vendorId, JSON.stringify({ rating, pros, cons, code }));
+        const prompt = document.getElementById("authPrompt");
+        if (prompt) prompt.style.display = "block";
+        showToast("Log in or create an account to post your review", "warning");
+        return;
+      }
+
+      try {
+        // one review per device
+        const dq = query(collection(db, "vendors", vendorId, "reviews"), where("deviceId", "==", deviceId));
+        const existing = await getDocs(dq);
+        if (!existing.empty) { showToast("You already reviewed this vendor", "warning"); return; }
+
+        // verify purchase code if given
+        let verifiedPurchase = false;
+        if (code) {
+          const codes = (vendorData && vendorData.purchaseCodes) || [];
+          if (codes.includes(code)) verifiedPurchase = true;
+        }
+
+        await addDoc(collection(db, "vendors", vendorId, "reviews"), {
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          deviceId,
+          rating, pros, cons,
+          verifiedPurchase,
+          createdAt: new Date()
+        });
+
+        localStorage.removeItem("vp_review_draft_" + vendorId);
+        showToast("Review submitted ✔", "success");
+        load(); // refresh the profile + reviews
+      } catch (e) {
+        console.error(e);
+        showToast("Couldn’t submit review", "error");
+      }
+    };
+
+    // ---------- load the profile ----------
     async function load() {
 
       const id = new URLSearchParams(location.search).get("id");
+      vendorId = id;
 
       if (!id) {
         box.innerHTML = card(`<h2>Invalid link</h2><p>No vendor was specified.</p>
@@ -118,6 +203,7 @@
       }
 
       const d = snap.data();
+      vendorData = d;
       document.title = `${d.name || "Vendor"} — VerifyPlug`;
       const trust = d.trustScore ?? 50;
       const status = getVendorStatus(trust);
@@ -127,7 +213,7 @@
         ? `<img class="v-avatar" src="${d.photoURL}" alt="${d.name || "Vendor"}">`
         : `<div class="v-avatar v-avatar--fallback"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
 
-      // BANNED — warn the buyer loudly
+      // BANNED — warn the buyer loudly (no review form for banned vendors)
       if (d.banned === true) {
         box.innerHTML = card(`
           <div class="badges"><span class="status-banned">🚫 Restricted</span></div>
@@ -141,7 +227,7 @@
       }
 
       // Reviews (public read)
-      let reviewsHtml = `<p class="muted-text">No reviews yet.</p>`;
+      let reviewsHtml = `<p class="muted-text">No reviews yet. Be the first.</p>`;
       let reviewCount = 0;
       try {
         const rs = await getDocs(collection(db, "vendors", id, "reviews"));
@@ -184,12 +270,39 @@
           <div style="margin-top:12px;">${reviewsHtml}</div>
         </div>
 
+        <div class="card reveal" style="margin-top:16px;">
+          <h2>Write a review</h2>
+          <label style="display:block;margin-top:10px;">Rating</label>
+          <select id="revRating">${ratingOptions()}</select>
+          <label style="display:block;margin-top:10px;">What was good?</label>
+          <textarea id="revPros" rows="2" placeholder="Pros"></textarea>
+          <label style="display:block;margin-top:10px;">Any issues?</label>
+          <textarea id="revCons" rows="2" placeholder="Cons"></textarea>
+          <label style="display:block;margin-top:10px;">Purchase code (optional)</label>
+          <input id="revCode" placeholder="VP-12345">
+          <button onclick="submitProfileReview()" style="margin-top:12px;">Submit review</button>
+
+          <div id="authPrompt" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--gold-line);border-radius:12px;background:var(--gold-soft);">
+            <p style="margin:0 0 10px;font-weight:500;">You need an account to post a review.</p>
+            <a href="auth.html" class="btn">Log in / Create account</a>
+          </div>
+        </div>
+
         <div class="card reveal" style="margin-top:16px;text-align:center;">
           <h3>About to buy from someone?</h3>
           <p style="margin:6px 0 0;">Check any vendor’s trust score before you pay.</p>
           <a href="auth.html" class="btn" style="margin-top:14px;">Verify a vendor</a>
         </div>
       `;
+
+      // restore a saved draft (e.g. after they went to log in and came back)
+      const draft = JSON.parse(localStorage.getItem("vp_review_draft_" + id) || "null");
+      if (draft) {
+        document.getElementById("revRating").value = draft.rating || "";
+        document.getElementById("revPros").value = draft.pros || "";
+        document.getElementById("revCons").value = draft.cons || "";
+        document.getElementById("revCode").value = draft.code || "";
+      }
     }
 
     load();
