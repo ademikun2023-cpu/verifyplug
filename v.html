@@ -66,9 +66,18 @@
     let vendorData = null;
     let vendorId = null;
 
-    onAuthStateChanged(auth, u => { currentUser = u; });
+    onAuthStateChanged(auth, u => { currentUser = u; applyAuthUI(); });
 
     // ---------- small helpers ----------
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function showToast(msg, type = "success") {
       let t = document.getElementById("toast");
       if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }
@@ -126,6 +135,16 @@
       return o;
     }
 
+    // show the purchase-code box only to signed-in users; show the sign-in nudge to everyone else
+    function applyAuthUI() {
+      const codeField = document.getElementById("codeField");
+      const prompt = document.getElementById("verifyPrompt");
+      if (!codeField || !prompt) return; // review form not on the page yet
+      const signedIn = !!currentUser;
+      codeField.style.display = signedIn ? "block" : "none";
+      prompt.style.display = signedIn ? "none" : "block";
+    }
+
     // ---------- submit a review (auth-gated) ----------
     window.submitProfileReview = async function () {
       const rating = Number(document.getElementById("revRating").value);
@@ -135,17 +154,8 @@
 
       if (!rating) { showToast("Pick a rating first", "warning"); return; }
 
-      // not logged in → save their draft and ask them to sign in
-      if (!currentUser) {
-        localStorage.setItem("vp_review_draft_" + vendorId, JSON.stringify({ rating, pros, cons, code }));
-        const prompt = document.getElementById("authPrompt");
-        if (prompt) prompt.style.display = "block";
-        showToast("Log in or create an account to post your review", "warning");
-        return;
-      }
-
       try {
-        // one review per device
+        // one review per device (light guard against accidental double-posting)
         const dq = query(collection(db, "vendors", vendorId, "reviews"), where("deviceId", "==", deviceId));
         const existing = await getDocs(dq);
         if (!existing.empty) { showToast("You already reviewed this vendor", "warning"); return; }
@@ -158,15 +168,14 @@
         }
 
         await addDoc(collection(db, "vendors", vendorId, "reviews"), {
-          userId: currentUser.uid,
-          userEmail: currentUser.email,
+          userId: currentUser ? currentUser.uid : null,
+          userEmail: currentUser ? currentUser.email : null,
           deviceId,
           rating, pros, cons,
           verifiedPurchase,
           createdAt: new Date()
         });
 
-        localStorage.removeItem("vp_review_draft_" + vendorId);
         showToast("Review submitted ✔", "success");
         load(); // refresh the profile + reviews
       } catch (e) {
@@ -210,14 +219,14 @@
       const verified = d.verified === true && d.banned !== true;
 
       const avatar = d.photoURL
-        ? `<img class="v-avatar" src="${d.photoURL}" alt="${d.name || "Vendor"}">`
+        ? `<img class="v-avatar" src="${escapeHtml(d.photoURL)}" alt="${escapeHtml(d.name) || "Vendor"}">`
         : `<div class="v-avatar v-avatar--fallback"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
 
       // BANNED — warn the buyer loudly (no review form for banned vendors)
       if (d.banned === true) {
         box.innerHTML = card(`
           <div class="badges"><span class="status-banned">🚫 Restricted</span></div>
-          <h2 style="margin-top:12px;">${d.name || "This vendor"}</h2>
+          <h2 style="margin-top:12px;">${escapeHtml(d.name) || "This vendor"}</h2>
           <p style="color:var(--red);font-weight:500;margin-top:8px;">
             This vendor has been flagged and restricted for policy violations. Do not send money.
           </p>
@@ -238,9 +247,9 @@
             const rv = r.data();
             reviewsHtml += `
               <div class="result-card">
-                <h3>⭐ ${rv.rating}/10 ${rv.verifiedPurchase ? "· ✅ Verified" : ""}</h3>
-                <p style="margin-top:6px;"><b>Pros:</b> ${rv.pros || "—"}</p>
-                <p style="margin-top:4px;"><b>Cons:</b> ${rv.cons || "—"}</p>
+                <h3>⭐ ${Number(rv.rating) || 0}/10 ${rv.verifiedPurchase ? "· ✅ Verified" : ""}</h3>
+                <p style="margin-top:6px;"><b>Pros:</b> ${escapeHtml(rv.pros) || "—"}</p>
+                <p style="margin-top:4px;"><b>Cons:</b> ${escapeHtml(rv.cons) || "—"}</p>
               </div>`;
           });
         }
@@ -252,15 +261,15 @@
           <div class="trust-ring" style="--p:${trust}">
             <div class="inner"><b>${trust}%</b><span>Trust</span></div>
           </div>
-          <h1 style="font-size:30px;margin-top:6px;">${d.name || "Vendor"}</h1>
+          <h1 style="font-size:30px;margin-top:6px;">${escapeHtml(d.name) || "Vendor"}</h1>
           <div class="badges" style="justify-content:center;margin-top:12px;">
             <span class="${status.className}">${status.label}</span>
             ${verified ? `<span class="verified-badge">✅ Verified</span>` : ""}
           </div>
           <div style="margin-top:18px;text-align:left;">
-            <p>📂 ${d.category || "—"}</p>
-            <p>🧾 ${d.location || "—"}</p>
-            <p>⭐ Average rating: ${d.averageRating || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</p>
+            <p>📂 ${escapeHtml(d.category) || "—"}</p>
+            <p>🧾 ${escapeHtml(d.location) || "—"}</p>
+            <p>⭐ Average rating: ${Number(d.averageRating) || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</p>
           </div>
           ${socialIcons(d.socials)}
         </div>
@@ -278,14 +287,17 @@
           <textarea id="revPros" rows="2" placeholder="Pros"></textarea>
           <label style="display:block;margin-top:10px;">Any issues?</label>
           <textarea id="revCons" rows="2" placeholder="Cons"></textarea>
-          <label style="display:block;margin-top:10px;">Purchase code (optional)</label>
-          <input id="revCode" placeholder="VP-12345">
+
+          <div id="codeField" style="display:none;">
+            <label style="display:block;margin-top:10px;">Purchase code (for a verified review)</label>
+            <input id="revCode" placeholder="VP-12345">
+          </div>
+
           <button onclick="submitProfileReview()" style="margin-top:12px;">Submit review</button>
 
-          <div id="authPrompt" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--gold-line);border-radius:12px;background:var(--gold-soft);">
-            <p style="margin:0 0 10px;font-weight:500;">You need an account to post a review.</p>
-            <a href="auth.html" class="btn">Log in / Create account</a>
-          </div>
+          <p id="verifyPrompt" style="display:none;margin-top:12px;font-size:14px;color:var(--muted);">
+            Bought from this vendor? <a href="auth.html">Sign in to leave a verified review →</a>
+          </p>
         </div>
 
         <div class="card reveal" style="margin-top:16px;text-align:center;">
@@ -295,14 +307,7 @@
         </div>
       `;
 
-      // restore a saved draft (e.g. after they went to log in and came back)
-      const draft = JSON.parse(localStorage.getItem("vp_review_draft_" + id) || "null");
-      if (draft) {
-        document.getElementById("revRating").value = draft.rating || "";
-        document.getElementById("revPros").value = draft.pros || "";
-        document.getElementById("revCons").value = draft.cons || "";
-        document.getElementById("revCode").value = draft.code || "";
-      }
+      applyAuthUI();
     }
 
     load();

@@ -38,11 +38,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ===== Cloudinary (free image hosting — no server, no card) =====
-// 1) make a free account at cloudinary.com
-// 2) copy your "Cloud name" below
-// 3) Settings > Upload > add an UNSIGNED upload preset and put its name below
-const CLOUDINARY_CLOUD  = "YOUR_CLOUD_NAME";       // <-- replace
-const CLOUDINARY_PRESET = "verifyplug_unsigned";   // <-- replace if you named it differently
+const CLOUDINARY_CLOUD  = "gotgehnt";
+const CLOUDINARY_PRESET = "verifyplug_unsigned";
 
 // shrink the image in the browser first (saves the vendor's data + your quota)
 function resizeImage(file, maxDim = 600, quality = 0.82) {
@@ -103,6 +100,18 @@ async function getVendorsCached() {
   vendorCacheTime = now;
 
   return vendors;
+}
+
+// ============================
+// SECURITY HELPER — escape anything user/vendor supplied before putting it in innerHTML
+// ============================
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // ============================
@@ -472,7 +481,7 @@ window.searchVendor = async () => {
     html += `
       <div class="vendor-card">
         <div class="vendor-header">
-          <h3>${data.name}</h3>
+          <h3>${escapeHtml(data.name)}</h3>
           <div class="badges">
             <span class="${status.className}">${status.label}</span>
             ${verifiedBadge ? `<span class="verified-badge">${verifiedBadge}</span>` : ""}
@@ -480,10 +489,10 @@ window.searchVendor = async () => {
         </div>
 
         <div class="vendor-info">
-          <p>📞 ${data.phone || "No phone"}</p>
+          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
           <p>📊 Trust Score: ${trustScore}%</p>
-          <p>⭐ Rating: ${data.averageRating || 0}/10</p>
-          <p>🧾 ${data.location || "No location"}</p>
+          <p>⭐ Rating: ${Number(data.averageRating) || 0}/10</p>
+          <p>🧾 ${escapeHtml(data.location) || "No location"}</p>
         </div>
 
         <div class="vendor-actions">
@@ -621,8 +630,8 @@ window.loadAdmin = async () => {
       const data = docItem.data();
       html += `
         <div class="card">
-          <h3>${data.name || "No name"}</h3>
-          <p>📞 ${data.phone || "No phone"}</p>
+          <h3>${escapeHtml(data.name) || "No name"}</h3>
+          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
           <p>${data.banned ? "🚫 BANNED" : "🟢 ACTIVE"}</p>
           <button onclick="deleteVendor('${docItem.id}')">Delete</button>
         </div>
@@ -724,8 +733,8 @@ window.loadVendorDashboard = async function () {
     const codesHtml = codes.length
       ? codes.slice().reverse().map(c => `
           <div class="code-pill">
-            <span class="code">${c}</span>
-            <button class="code-copy" onclick="copyCode('${c}')">Copy</button>
+            <span class="code">${escapeHtml(c)}</span>
+            <button class="code-copy" onclick="copyCode('${escapeHtml(c)}')">Copy</button>
           </div>
         `).join("")
       : `<p class="muted-text">No purchase codes yet. Generate one to share with buyers after a sale.</p>`;
@@ -743,7 +752,7 @@ window.loadVendorDashboard = async function () {
           </div>
         </div>
 
-        <h2 style="text-align:center;">Hi ${data.name} 👋</h2>
+        <h2 style="text-align:center;">Hi ${escapeHtml(data.name)} 👋</h2>
 
         <div class="badges" style="justify-content:center;margin-top:10px;">
           <span class="${status.className}">${status.label}</span>
@@ -751,10 +760,10 @@ window.loadVendorDashboard = async function () {
         </div>
 
         <div style="margin-top:18px;">
-          <p>📞 ${data.phone || "No phone"}</p>
-          <p>🧾 ${data.location || "No location"}</p>
-          <p>⭐ Average Rating: ${data.averageRating || 0}/10</p>
-          <p>🔍 Searches This Week: ${data.searchCount || 0}</p>
+          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
+          <p>🧾 ${escapeHtml(data.location) || "No location"}</p>
+          <p>⭐ Average Rating: ${Number(data.averageRating) || 0}/10</p>
+          <p>🔍 Searches This Week: ${Number(data.searchCount) || 0}</p>
         </div>
 
         <div class="vendor-actions">
@@ -894,10 +903,10 @@ window.loadAdminDashboard = async function () {
       reportsHTML += `
         <div class="result-card">
           <h3>🚨 Scam Report</h3>
-          <p><b>Phone:</b> ${d.phone || "N/A"}</p>
-          <p><b>Reason:</b> ${d.reason || "N/A"}</p>
-          <p><b>By:</b> ${d.reporterEmail || "Unknown"}</p>
-          <button onclick="openReportModal('${docItem.id}','${d.phone || ""}','${(d.reason || "").replace(/'/g, "\\'")}','${d.reporterEmail || ""}')">View Report</button>
+          <p><b>Phone:</b> ${escapeHtml(d.phone) || "N/A"}</p>
+          <p><b>Reason:</b> ${escapeHtml(d.reason) || "N/A"}</p>
+          <p><b>By:</b> ${escapeHtml(d.reporterEmail) || "Unknown"}</p>
+          <button onclick="openReportModal('${docItem.id}','${escapeHtml(d.phone) || ""}','${(d.reason || "").replace(/'/g, "\\'").replace(/</g, "")}','${escapeHtml(d.reporterEmail) || ""}')">View Report</button>
         </div>
       `;
     });
@@ -916,13 +925,13 @@ window.loadAdminDashboard = async function () {
 
       vendorsHTML += `
         <div class="result-card">
-          <h3>${d.name || "No name"}</h3>
-          <p>📞 ${d.phone || "No phone"}</p>
+          <h3>${escapeHtml(d.name) || "No name"}</h3>
+          <p>📞 ${escapeHtml(d.phone) || "No phone"}</p>
           <div class="badges" style="margin:8px 0;">
             <span class="${status.className}">${status.label}</span>
             <span class="${d.banned ? "status-banned" : "status-trusted"}">${d.banned ? "🚫 Banned" : "🟢 Active"}</span>
           </div>
-          <button onclick="banVendor('${docItem.id}','${d.createdBy || ""}','${d.phone || ""}','${(d.name || "").replace(/'/g, "\\'")}')">Ban Vendor</button>
+          <button onclick="banVendor('${docItem.id}','${escapeHtml(d.createdBy) || ""}','${escapeHtml(d.phone) || ""}','${(d.name || "").replace(/'/g, "\\'").replace(/</g, "")}')">Ban Vendor</button>
         </div>
       `;
     });
@@ -1091,10 +1100,10 @@ window.viewReviews = async function (vendorId) {
       const div = document.createElement("div");
       div.className = "result-card";
       div.innerHTML = `
-        <h3>⭐ ${d.rating}/10 ${d.verifiedPurchase ? " ✅ Verified Purchase" : ""}</h3>
-        <p><b>Pros:</b><br>${d.pros || "None"}</p>
+        <h3>⭐ ${Number(d.rating) || 0}/10 ${d.verifiedPurchase ? " ✅ Verified Purchase" : ""}</h3>
+        <p><b>Pros:</b><br>${escapeHtml(d.pros) || "None"}</p>
         <br>
-        <p><b>Cons:</b><br>${d.cons || "None"}</p>
+        <p><b>Cons:</b><br>${escapeHtml(d.cons) || "None"}</p>
       `;
       container.appendChild(div);
     });
@@ -1217,11 +1226,11 @@ window.loadPremiumVendors = async function () {
         const div = document.createElement("div");
         div.className = "premium-vendor-card";
         div.innerHTML = `
-          <h3>⭐ ${d.name}</h3>
-          <p>📂 ${d.category || "Others"}</p>
-          <p>📞 ${d.phone || "No phone"}</p>
-          <p>🧾 ${d.location || "No location"}</p>
-          <p>📊 Trust Score: ${trustScore}%</p>
+          <h3>⭐ ${escapeHtml(d.name)}</h3>
+          <p>📂 ${escapeHtml(d.category) || "Others"}</p>
+          <p>📞 ${escapeHtml(d.phone) || "No phone"}</p>
+          <p>🧾 ${escapeHtml(d.location) || "No location"}</p>
+          <p>📊 Trust Score: ${Number(trustScore) || 0}%</p>
           <div class="premium-badge">✅ Premium Vendor</div>
         `;
         container.appendChild(div);
