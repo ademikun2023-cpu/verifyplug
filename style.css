@@ -297,3 +297,77 @@ a.btn,a.btn-secondary{display:inline-flex;align-items:center;justify-content:cen
 .file-upload svg{width:18px;height:18px;color:var(--gold-deep);flex:0 0 auto}
 .file-upload input[type="file"]{display:none}
 .file-upload .file-name{font-size:13px;color:var(--faint);margin-left:auto}
+/* =========================================================
+   VerifyPlug — Premium interior system
+   ========================================================= */
+
+/* Panels — the interior content block */
+.v-panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:24px;box-shadow:var(--sh-sm);margin-top:16px;
+}
+.v-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+
+/* Hero — trust-ring avatar (the signature element) */
+.v-hero{text-align:center;padding:32px 24px 26px}
+.trust-avatar{
+  --p:50;
+  width:136px;height:136px;border-radius:50%;padding:7px;
+  background:conic-gradient(var(--gold) calc(var(--p)*1%), var(--surface-3) 0);
+  margin:0 auto 16px;box-shadow:var(--sh-sm);
+}
+.trust-avatar-inner{
+  width:100%;height:100%;border-radius:50%;overflow:hidden;
+  background:var(--surface);display:grid;place-items:center;
+  box-shadow:inset 0 0 0 1px var(--border);
+}
+.trust-avatar-inner img{width:100%;height:100%;object-fit:cover}
+.trust-avatar-inner .fb{font-size:38px;color:var(--gold-deep)}
+.trust-pct{
+  display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;
+  font-size:12px;font-weight:600;color:var(--gold-deep);
+  background:var(--gold-soft);border:1px solid var(--gold-line);
+  padding:5px 13px;border-radius:999px;
+}
+.v-hero h1{font-size:28px;letter-spacing:-1px;margin-bottom:12px}
+
+/* Info rows — replaces the emoji-prefixed lines */
+.info-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border)}
+.info-row:last-of-type{border-bottom:none}
+.info-row .chip{
+  width:40px;height:40px;border-radius:11px;flex:0 0 auto;
+  display:grid;place-items:center;font-size:15px;
+  background:var(--surface-2);color:var(--gold-deep);border:1px solid var(--border);
+}
+.info-row .meta{display:flex;flex-direction:column;gap:1px;min-width:0}
+.info-row .rl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.info-row .rv{font-size:15px;color:var(--text);font-weight:500;word-break:break-word}
+
+/* Badges with icons (status colors already defined above) */
+.status-recommended i,.status-trusted i,.status-normal i,.status-weak i,
+.status-banned i,.verified-badge i{font-size:11px}
+
+/* Reviews */
+.review{padding:16px 0;border-bottom:1px solid var(--border)}
+.review:first-of-type{padding-top:0}
+.review:last-of-type{border-bottom:none}
+.review-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rating-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:700;color:var(--text);
+  background:var(--surface-2);border:1px solid var(--border);
+  padding:4px 11px;border-radius:999px;
+}
+.rating-pill i{color:var(--gold)}
+.rev-verified{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--gold-deep)}
+.review .rp{font-size:14px;color:var(--text);margin-top:2px}
+.review .rc{font-size:13.5px;color:var(--muted);margin-top:4px}
+
+/* Socials */
+.socials{display:flex;gap:12px;justify-content:center;margin-top:22px}
+.social-link{
+  width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid var(--gold-line);background:var(--gold-soft);color:var(--gold-deep);
+  font-size:19px;text-decoration:none;transition:.2s;
+}
+.social-link:hover{background:var(--gold);color:#1a1505;transform:translateY(-2px)}

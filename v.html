@@ -7,17 +7,6 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="icon" href="/logo.png" type="image/png">
-  <style>
-    .socials{display:flex;gap:12px;justify-content:center;margin-top:20px}
-    .social-link{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
-      border:1px solid var(--gold-line);background:var(--gold-soft);color:var(--gold-deep);
-      font-size:19px;text-decoration:none;transition:.2s}
-    .social-link:hover{background:var(--gold);color:#1a1505;transform:translateY(-2px)}
-    .v-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 10px;
-      border:2px solid var(--gold-line);box-shadow:var(--sh-sm)}
-    .v-avatar--fallback{display:grid;place-items:center;background:var(--gold-soft);color:var(--gold-deep)}
-    .v-avatar--fallback svg{width:40px;height:40px}
-  </style>
 </head>
 
 <body>
@@ -31,7 +20,7 @@
     <a href="auth.html" class="topbar-tag">Sign in</a>
   </div>
 
-  <div class="container" style="max-width:620px;">
+  <div class="container" style="max-width:600px;">
     <div id="profile">
       <div class="card"><p>Loading vendor…</p></div>
     </div>
@@ -96,11 +85,11 @@
     const deviceId = getDeviceId();
 
     function getVendorStatus(s) {
-      if (s >= 90) return { label: "Highly Recommended", className: "status-recommended" };
-      if (s >= 70) return { label: "Trusted Vendor", className: "status-trusted" };
-      if (s >= 50) return { label: "Normal Vendor", className: "status-normal" };
-      if (s >= 21) return { label: "Risky Vendor", className: "status-weak" };
-      return { label: "Banned Vendor", className: "status-banned" };
+      if (s >= 90) return { label: "Highly Recommended", className: "status-recommended", icon: "fa-award" };
+      if (s >= 70) return { label: "Trusted Vendor", className: "status-trusted", icon: "fa-circle-check" };
+      if (s >= 50) return { label: "Normal Vendor", className: "status-normal", icon: "fa-circle" };
+      if (s >= 21) return { label: "Risky Vendor", className: "status-weak", icon: "fa-triangle-exclamation" };
+      return { label: "Banned Vendor", className: "status-banned", icon: "fa-ban" };
     }
 
     function card(html) { return `<div class="card reveal">${html}</div>`; }
@@ -145,22 +134,21 @@
       prompt.style.display = signedIn ? "none" : "block";
     }
 
-    // ---------- submit a review (auth-gated) ----------
+    // ---------- submit a review (verified tier gated to signed-in users) ----------
     window.submitProfileReview = async function () {
       const rating = Number(document.getElementById("revRating").value);
       const pros = document.getElementById("revPros").value.trim();
       const cons = document.getElementById("revCons").value.trim();
-      const code = document.getElementById("revCode").value.trim();
+      const codeEl = document.getElementById("revCode");
+      const code = codeEl ? codeEl.value.trim() : "";
 
       if (!rating) { showToast("Pick a rating first", "warning"); return; }
 
       try {
-        // one review per device (light guard against accidental double-posting)
         const dq = query(collection(db, "vendors", vendorId, "reviews"), where("deviceId", "==", deviceId));
         const existing = await getDocs(dq);
         if (!existing.empty) { showToast("You already reviewed this vendor", "warning"); return; }
 
-        // verify purchase code if given
         let verifiedPurchase = false;
         if (code) {
           const codes = (vendorData && vendorData.purchaseCodes) || [];
@@ -176,11 +164,11 @@
           createdAt: new Date()
         });
 
-        showToast("Review submitted ✔", "success");
-        load(); // refresh the profile + reviews
+        showToast("Review posted", "success");
+        load();
       } catch (e) {
         console.error(e);
-        showToast("Couldn’t submit review", "error");
+        showToast("Couldn’t post your review", "error");
       }
     };
 
@@ -200,7 +188,7 @@
       try {
         snap = await getDoc(doc(db, "vendors", id));
       } catch (e) {
-        box.innerHTML = card(`<h2>Couldn’t load profile</h2><p>Please try again later.</p>`);
+        box.innerHTML = card(`<h2>Couldn’t load profile</h2><p>Please try again in a moment.</p>`);
         return;
       }
 
@@ -218,25 +206,32 @@
       const status = getVendorStatus(trust);
       const verified = d.verified === true && d.banned !== true;
 
-      const avatar = d.photoURL
-        ? `<img class="v-avatar" src="${escapeHtml(d.photoURL)}" alt="${escapeHtml(d.name) || "Vendor"}">`
-        : `<div class="v-avatar v-avatar--fallback"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+      const avatarInner = d.photoURL
+        ? `<img src="${escapeHtml(d.photoURL)}" alt="${escapeHtml(d.name) || "Vendor"}">`
+        : `<i class="fa-solid fa-store fb"></i>`;
 
       // BANNED — warn the buyer loudly (no review form for banned vendors)
       if (d.banned === true) {
-        box.innerHTML = card(`
-          <div class="badges"><span class="status-banned">🚫 Restricted</span></div>
-          <h2 style="margin-top:12px;">${escapeHtml(d.name) || "This vendor"}</h2>
-          <p style="color:var(--red);font-weight:500;margin-top:8px;">
-            This vendor has been flagged and restricted for policy violations. Do not send money.
-          </p>
-          <a href="auth.html" class="btn" style="margin-top:16px;">Check a safer vendor</a>
-        `);
+        box.innerHTML = `
+          <div class="v-panel v-hero reveal">
+            <div class="trust-avatar" style="--p:${trust}">
+              <div class="trust-avatar-inner">${avatarInner}</div>
+            </div>
+            <div class="badges" style="justify-content:center;margin-bottom:10px;">
+              <span class="status-banned"><i class="fa-solid fa-ban"></i> Restricted</span>
+            </div>
+            <h1>${escapeHtml(d.name) || "This vendor"}</h1>
+            <p style="color:var(--red);font-weight:500;margin-top:8px;">
+              This vendor has been flagged and restricted for policy violations. Do not send money.
+            </p>
+            <a href="auth.html" class="btn" style="margin-top:18px;">Check a safer vendor</a>
+          </div>
+        `;
         return;
       }
 
       // Reviews (public read)
-      let reviewsHtml = `<p class="muted-text">No reviews yet. Be the first.</p>`;
+      let reviewsHtml = `<p class="muted-text">No reviews yet — be the first.</p>`;
       let reviewCount = 0;
       try {
         const rs = await getDocs(collection(db, "vendors", id, "reviews"));
@@ -246,64 +241,80 @@
           rs.forEach(r => {
             const rv = r.data();
             reviewsHtml += `
-              <div class="result-card">
-                <h3>⭐ ${Number(rv.rating) || 0}/10 ${rv.verifiedPurchase ? "· ✅ Verified" : ""}</h3>
-                <p style="margin-top:6px;"><b>Pros:</b> ${escapeHtml(rv.pros) || "—"}</p>
-                <p style="margin-top:4px;"><b>Cons:</b> ${escapeHtml(rv.cons) || "—"}</p>
+              <div class="review">
+                <div class="review-top">
+                  <span class="rating-pill"><i class="fa-solid fa-star"></i> ${Number(rv.rating) || 0}/10</span>
+                  ${rv.verifiedPurchase ? `<span class="rev-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>` : ""}
+                </div>
+                <p class="rp">${escapeHtml(rv.pros) || "—"}</p>
+                ${rv.cons ? `<p class="rc">${escapeHtml(rv.cons)}</p>` : ""}
               </div>`;
           });
         }
       } catch (e) { /* reviews stay as "none" if rules block */ }
 
       box.innerHTML = `
-        <div class="card reveal" style="text-align:center;">
-          ${avatar}
-          <div class="trust-ring" style="--p:${trust}">
-            <div class="inner"><b>${trust}%</b><span>Trust</span></div>
+        <div class="v-panel v-hero reveal">
+          <div class="trust-avatar" style="--p:${trust}">
+            <div class="trust-avatar-inner">${avatarInner}</div>
           </div>
-          <h1 style="font-size:30px;margin-top:6px;">${escapeHtml(d.name) || "Vendor"}</h1>
-          <div class="badges" style="justify-content:center;margin-top:12px;">
-            <span class="${status.className}">${status.label}</span>
-            ${verified ? `<span class="verified-badge">✅ Verified</span>` : ""}
+          <div class="trust-pct"><i class="fa-solid fa-shield-halved"></i> ${trust}% trust score</div>
+          <h1>${escapeHtml(d.name) || "Vendor"}</h1>
+          <div class="badges" style="justify-content:center;">
+            <span class="${status.className}"><i class="fa-solid ${status.icon}"></i> ${status.label}</span>
+            ${verified ? `<span class="verified-badge"><i class="fa-solid fa-circle-check"></i> Verified</span>` : ""}
           </div>
-          <div style="margin-top:18px;text-align:left;">
-            <p>📂 ${escapeHtml(d.category) || "—"}</p>
-            <p>🧾 ${escapeHtml(d.location) || "—"}</p>
-            <p>⭐ Average rating: ${Number(d.averageRating) || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</p>
+        </div>
+
+        <div class="v-panel reveal">
+          <div class="v-panel-head"><span class="eyebrow">Vendor details</span></div>
+          <div class="info-row">
+            <div class="chip"><i class="fa-solid fa-tag"></i></div>
+            <div class="meta"><span class="rl">Category</span><span class="rv">${escapeHtml(d.category) || "—"}</span></div>
+          </div>
+          <div class="info-row">
+            <div class="chip"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="meta"><span class="rl">Location</span><span class="rv">${escapeHtml(d.location) || "—"}</span></div>
+          </div>
+          <div class="info-row">
+            <div class="chip"><i class="fa-solid fa-star"></i></div>
+            <div class="meta"><span class="rl">Average rating</span><span class="rv">${Number(d.averageRating) || 0}/10 · ${reviewCount} review${reviewCount === 1 ? "" : "s"}</span></div>
           </div>
           ${socialIcons(d.socials)}
         </div>
 
-        <div class="card reveal" style="margin-top:16px;">
-          <h2>Reviews</h2>
-          <div style="margin-top:12px;">${reviewsHtml}</div>
+        <div class="v-panel reveal">
+          <div class="v-panel-head"><span class="eyebrow">Reviews</span><span class="topbar-tag">${reviewCount}</span></div>
+          ${reviewsHtml}
         </div>
 
-        <div class="card reveal" style="margin-top:16px;">
-          <h2>Write a review</h2>
-          <label style="display:block;margin-top:10px;">Rating</label>
+        <div class="v-panel reveal">
+          <div class="v-panel-head"><span class="eyebrow">Write a review</span></div>
+          <label>Rating</label>
           <select id="revRating">${ratingOptions()}</select>
-          <label style="display:block;margin-top:10px;">What was good?</label>
+          <label style="margin-top:10px;">What was good?</label>
           <textarea id="revPros" rows="2" placeholder="Pros"></textarea>
-          <label style="display:block;margin-top:10px;">Any issues?</label>
+          <label style="margin-top:10px;">Any issues?</label>
           <textarea id="revCons" rows="2" placeholder="Cons"></textarea>
 
           <div id="codeField" style="display:none;">
-            <label style="display:block;margin-top:10px;">Purchase code (for a verified review)</label>
+            <label style="margin-top:10px;">Purchase code (for a verified review)</label>
             <input id="revCode" placeholder="VP-12345">
           </div>
 
-          <button onclick="submitProfileReview()" style="margin-top:12px;">Submit review</button>
+          <button onclick="submitProfileReview()" style="margin-top:14px;">Post review</button>
 
           <p id="verifyPrompt" style="display:none;margin-top:12px;font-size:14px;color:var(--muted);">
-            Bought from this vendor? <a href="auth.html">Sign in to leave a verified review →</a>
+            <i class="fa-solid fa-lock" style="color:var(--gold-deep);margin-right:4px;"></i>
+            Bought from this vendor? <a href="auth.html" style="color:var(--gold-deep);font-weight:600;">Sign in to leave a verified review</a>
           </p>
         </div>
 
-        <div class="card reveal" style="margin-top:16px;text-align:center;">
-          <h3>About to buy from someone?</h3>
+        <div class="v-panel reveal" style="text-align:center;">
+          <i class="fa-solid fa-shield-halved" style="font-size:26px;color:var(--gold-deep);"></i>
+          <h3 style="margin-top:10px;">About to buy from someone?</h3>
           <p style="margin:6px 0 0;">Check any vendor’s trust score before you pay.</p>
-          <a href="auth.html" class="btn" style="margin-top:14px;">Verify a vendor</a>
+          <a href="auth.html" class="btn" style="margin-top:16px;">Verify a vendor</a>
         </div>
       `;
 
