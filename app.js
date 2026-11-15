@@ -6,7 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  sendEmailVerification
+  sendEmailVerification,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore,
@@ -75,6 +76,46 @@ async function uploadVendorPhoto(file) {
   const data = await res.json();
   return data.secure_url;
 }
+
+const protectedPage = /(?:vendor|customer|admin)\.html$/.test(location.pathname);
+let dashboardRequest = 0;
+function deadline(promise, ms = 15000) {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Connection timed out")), ms);
+  })]).finally(() => clearTimeout(timer));
+}
+function pageState(state, message) {
+  document.body.dataset.state = state;
+  const loading = document.getElementById("pageLoading");
+  const error = document.getElementById("pageError");
+  const content = document.getElementById("mainContainer");
+  if (loading) loading.hidden = state !== "loading";
+  if (error) error.hidden = state !== "error";
+  if (content) { content.hidden = !["ready", "new"].includes(state); content.setAttribute("aria-busy", String(state === "loading")); }
+  if (message && document.getElementById("pageErrorMessage")) document.getElementById("pageErrorMessage").textContent = message;
+  const form = document.getElementById("vendorForm");
+  const dashboard = document.getElementById("vendorDashboard");
+  if (form) form.hidden = state !== "new";
+  if (dashboard) dashboard.hidden = state !== "ready";
+}
+function normalizedPhone(value) {
+  const compact = String(value).replace(/[\s()-]/g, "");
+  return /^(?:\+?234)[789]\d{9}$/.test(compact) ? "0" + compact.replace(/^\+?234/, "") : compact;
+}
+function phoneVariants(value) {
+  const phone = normalizedPhone(value);
+  return /^0[789]\d{9}$/.test(phone) ? [phone, "234" + phone.slice(1), "+234" + phone.slice(1)] : [phone];
+}
+function scoreOf(value) {
+  const number = value == null ? 50 : Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 50;
+}
+function inlineCall(name, ...args) {
+  return escapeHtml(`${name}(${args.map(a => JSON.stringify(a ?? "")).join(",")})`);
+}
+window.logout = async () => { await signOut(auth); location.replace("auth.html"); };
+window.retryPage = () => initializePage(auth.currentUser);
 
 let vendorCache = null;
 let vendorCacheTime = 0;
@@ -145,23 +186,23 @@ function getDeviceId() {
 function getVendorStatus(trustScore) {
 
   if (trustScore >= 90) {
-    return { label: "Highly Recommended ⭐", className: "status-recommended" };
+    return { label: "Highly recommended", className: "status-recommended" };
   }
   if (trustScore >= 70) {
-    return { label: "Trusted Vendor ✅", className: "status-trusted" };
+    return { label: "Trusted vendor", className: "status-trusted" };
   }
   if (trustScore >= 50) {
     return { label: "Normal Vendor", className: "status-normal" };
   }
   if (trustScore >= 21) {
-    return { label: "Risky Vendor ⚠️", className: "status-weak" };
+    return { label: "Use caution", className: "status-weak" };
   }
-  return { label: "Banned Vendor 🚫", className: "status-banned" };
+  return { label: "Restricted vendor", className: "status-banned" };
 }
 
 function getVerifiedBadge(vendor) {
   if (vendor.verifiedPurchase === true && (vendor.trustScore ?? 50) >= 50) {
-    return "✅ Verified Purchase";
+    return "Purchase-code verified";
   }
   return "";
 }
@@ -204,6 +245,8 @@ window.showToast = function (message, type = "success") {
     document.body.appendChild(toast);
   }
 
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   toast.textContent = message;
 
   // base id styling lives in CSS; classes drive colour + visibility
@@ -269,16 +312,17 @@ window.signup = async () => {
 
     const user = userCred.user;
 
-    await sendEmailVerification(user);
-
     await setDoc(
       doc(db, "users", user.uid),
       { email, role, verified: false, createdAt: Date.now() }
     );
 
-    showToast("Verification email sent ✔ Check your inbox", "success");
-
-    await auth.signOut();
+    try {
+      await sendEmailVerification(user);
+      showToast("Account created. Check your inbox for the verification email, then sign in.", "success");
+    } catch (error) {
+      showToast("Account created, but the verification email could not be sent. You can sign in with your saved details.", "warning");
+    } finally { await signOut(auth); }
 
   } catch (e) {
 
@@ -312,7 +356,7 @@ window.login = async () => {
     // ADMIN BYPASS
     if (user.email === "ademikun2023@gmail.com") {
       showToast("Admin login successful ✔", "success");
-      setTimeout(() => { window.location.href = "admin.html"; }, 300);
+      window.location.replace("admin.html");
       return;
     }
 
@@ -320,7 +364,7 @@ window.login = async () => {
 
     if (!userSnap.exists()) {
       showToast("User profile missing", "error");
-      await auth.signOut();
+      await signOut(auth);
       return;
     }
 
@@ -328,13 +372,7 @@ window.login = async () => {
 
     showToast("Login successful ✔", "success");
 
-    setTimeout(() => {
-      if (role === "vendor") {
-        window.location.href = "vendor.html";
-      } else {
-        window.location.href = "customer.html";
-      }
-    }, 300);
+    window.location.replace(role === "vendor" ? "vendor.html" : "customer.html");
 
   } catch (err) {
 
@@ -342,7 +380,7 @@ window.login = async () => {
 
     let msg = err.message;
     if (msg.includes("user-not-found")) msg = "Account not found";
-    if (msg.includes("wrong-password")) msg = "Incorrect password";
+    if (msg.includes("wrong-password") || msg.includes("invalid-credential")) msg = "Email or password is incorrect";
     if (msg.includes("invalid-email")) msg = "Invalid email format";
 
     showToast(msg, "error");
@@ -376,11 +414,14 @@ window.addVendor = async function () {
     return;
   }
 
-  const cleanPhone = vendorPhone.replace(/\s+/g, "");
+  const cleanPhone = normalizedPhone(vendorPhone);
+  if (!/^\+?\d{7,15}$/.test(cleanPhone)) { showToast("Enter a valid phone number", "warning"); return; }
+  const own = await getDocs(query(collection(db, "vendors"), where("createdBy", "==", user.email)));
+  if (!own.empty) { await loadVendorDashboard(); return; }
 
   const q = query(
     collection(db, "vendors"),
-    where("phone", "==", cleanPhone)
+    where("phone", "in", phoneVariants(cleanPhone))
   );
 
   const existing = await getDocs(q);
@@ -429,7 +470,7 @@ window.addVendor = async function () {
   document.getElementById("vendorPhone").value = "";
   document.getElementById("vendorLocation").value = "";
 
-  setTimeout(() => { loadVendorDashboard(); }, 200);
+  await loadVendorDashboard();
 };
 
 // ================= SEARCH =================
@@ -438,7 +479,7 @@ window.searchVendor = async () => {
   const searchInput = document.getElementById("searchInput");
   const result = document.getElementById("result");
 
-  const value = searchInput.value.trim();
+  const value = normalizedPhone(searchInput.value.trim());
 
   if (!value) {
     showToast("Enter phone number", "error");
@@ -447,11 +488,11 @@ window.searchVendor = async () => {
 
   const q = query(
     collection(db, "vendors"),
-    where("phone", "==", value),
-    where("banned", "==", false)
+    where("phone", "in", phoneVariants(value))
   );
 
-  const snap = await getDocs(q);
+  result.innerHTML = '<p role="status">Looking up this number…</p>';
+  const snap = await deadline(getDocs(q));
 
   result.innerHTML = "";
 
@@ -470,12 +511,8 @@ window.searchVendor = async () => {
 
     const data = docItem.data();
 
-    const trustScore =
-      typeof data.trustScore === "number"
-        ? data.trustScore
-        : Number(data.trustScore) || 50;
-
-    const status = getVendorStatus(trustScore);
+    const trustScore = scoreOf(data.trustScore);
+    const status = data.banned ? {label: "Restricted vendor", className: "status-banned"} : getVendorStatus(trustScore);
     const verifiedBadge = getVerifiedBadge(data);
 
     html += `
@@ -489,15 +526,15 @@ window.searchVendor = async () => {
         </div>
 
         <div class="vendor-info">
-          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
-          <p>📊 Trust Score: ${trustScore}%</p>
-          <p>⭐ Rating: ${Number(data.averageRating) || 0}/10</p>
-          <p>🧾 ${escapeHtml(data.location) || "No location"}</p>
+          <p>Phone: ${escapeHtml(data.phone) || "No phone"}</p>
+          <p>Trust score: ${trustScore}%</p>
+          <p>Buyer rating: ${Number(data.averageRating) || 0}/10</p>
+          <p>Location: ${escapeHtml(data.location) || "No location"}</p>
         </div>
 
         <div class="vendor-actions">
-          <button onclick="viewVendor('${docItem.id}')">View Profile</button>
-          <button onclick="openReviewModal('${docItem.id}')" class="btn-secondary">Add Review</button>
+          <a class="btn" href="v.html?id=${encodeURIComponent(docItem.id)}">View profile</a>
+          ${!data.banned && trustScore > 20 ? `<button onclick="openReviewModal('${docItem.id}')" class="btn-secondary">Add review</button>` : `<span class="status-banned">Do not send money to this vendor.</span>`}
           <button onclick="viewReviews('${docItem.id}')" class="btn-secondary">View Reviews</button>
         </div>
       </div>
@@ -506,7 +543,8 @@ window.searchVendor = async () => {
 
   result.innerHTML = html;
 
-  await trackVendorSearch();
+  await Promise.allSettled(snap.docs.map(item => updateDoc(doc(db, "vendors", item.id), { searchCount: increment(1) })));
+  try { await trackVendorSearch(); } catch (error) { console.error("Search counter could not sync", error); }
 };
 
 window.reportScam = async function () {
@@ -518,8 +556,8 @@ window.reportScam = async function () {
     return;
   }
 
-  let phone = document.getElementById("scamPhone").value;
-  let reason = document.getElementById("scamReason").value;
+  let phone = normalizedPhone(document.getElementById("scamPhone").value.trim());
+  let reason = document.getElementById("scamReason").value.trim();
 
   if (!phone || !reason) {
     showToast("Fill all fields", "warning");
@@ -535,12 +573,12 @@ window.reportScam = async function () {
 
     const q = query(
       collection(db, "vendors"),
-      where("phone", "==", phone)
+      where("phone", "in", phoneVariants(phone))
     );
 
     const snap = await getDocs(q);
 
-    snap.forEach(async (docSnap) => {
+    await Promise.all(snap.docs.map(async (docSnap) => {
 
       const data = docSnap.data();
 
@@ -561,7 +599,7 @@ window.reportScam = async function () {
         doc(db, "vendors", docSnap.id),
         { trustScore: updatedScore, verified: verifiedStatus, banned: bannedStatus }
       );
-    });
+    }));
 
     showToast("Report submitted ✔", "success");
 
@@ -631,7 +669,7 @@ window.loadAdmin = async () => {
       html += `
         <div class="card">
           <h3>${escapeHtml(data.name) || "No name"}</h3>
-          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
+          <p>Phone: ${escapeHtml(data.phone) || "No phone"}</p>
           <p>${data.banned ? "🚫 BANNED" : "🟢 ACTIVE"}</p>
           <button onclick="deleteVendor('${docItem.id}')">Delete</button>
         </div>
@@ -671,125 +709,63 @@ window.setStatus = function (isPaid) {
 // VENDOR DASHBOARD
 // ===============================
 window.loadVendorDashboard = async function () {
-
   const user = auth.currentUser;
-
-  if (!user) {
-    setTimeout(() => { window.loadVendorDashboard(); }, 600);
-    return;
-  }
-
+  const request = ++dashboardRequest;
+  if (!user) { location.replace("auth.html"); return; }
+  pageState("loading");
   try {
-
-    const q = query(
-      collection(db, "vendors"),
-      where("createdBy", "==", user.email)
-    );
-
-    const snap = await getDocs(q);
-
-    const container = document.getElementById("vendorDashboard");
-    const form = document.getElementById("vendorForm");
-
-    if (!container) return;
-
-    if (snap.empty) {
-      container.innerHTML = `
-        <div class="card">
-          <h3>No vendor business found</h3>
-          <p>Create your business profile above to start building trust.</p>
-        </div>
-      `;
-      container.style.display = "block";
-      return;
-    }
-
+    const snap = await deadline(getDocs(query(collection(db, "vendors"), where("createdBy", "==", user.email))));
+    if (request !== dashboardRequest || auth.currentUser?.uid !== user.uid) return;
+    if (snap.empty) { pageState("new"); return; }
     const docItem = snap.docs[0];
     const data = docItem.data();
-
-    // BAN CHECK
-    if (data?.banned === true) {
-      document.body.innerHTML = `
-        <div id="banScreen">
-          <h1>🚫 You have been banned</h1>
-          <p>Your vendor account has been restricted due to policy violations.</p>
-          <p>Contact support if you believe this is a mistake.</p>
-        </div>
-      `;
-      await auth.signOut();
+    if (data.banned === true) {
+      pageState("banned");
+      document.getElementById("banScreen").hidden = false;
       return;
     }
-
-    const trustScore = data.trustScore ?? 50;
+    const trustScore = scoreOf(data.trustScore);
     const status = getVendorStatus(trustScore);
-    const verifiedBadge = getVerifiedBadge(data);
-
     const maxCodes = data.verified ? 60 : 20;
-    const usedCodes = data.codesUsedThisMonth || 0;
-    const remainingCodes = maxCodes - usedCodes;
-
+    const now = new Date();
+    const sameMonth = data.lastCodeMonth === now.getMonth() && data.lastCodeYear === now.getFullYear();
+    const usedCodes = sameMonth ? Number(data.codesUsedThisMonth) || 0 : 0;
+    const remainingCodes = Math.max(0, maxCodes - usedCodes);
     const codes = Array.isArray(data.purchaseCodes) ? data.purchaseCodes : [];
-
-    const codesHtml = codes.length
-      ? codes.slice().reverse().map(c => `
-          <div class="code-pill">
-            <span class="code">${escapeHtml(c)}</span>
-            <button class="code-copy" onclick="copyCode('${escapeHtml(c)}')">Copy</button>
-          </div>
-        `).join("")
-      : `<p class="muted-text">No purchase codes yet. Generate one to share with buyers after a sale.</p>`;
-
-    if (form) form.style.display = "none";
-    container.style.display = "block";
-
-    container.innerHTML = `
-      <div class="vendor-owner-card reveal">
-
-        <div class="trust-ring" style="--p:${trustScore}">
-          <div class="inner">
-            <b>${trustScore}%</b>
-            <span>Trust</span>
-          </div>
+    const codesHtml = codes.length ? codes.slice().reverse().map(c => `
+      <div class="code-pill"><span class="code">${escapeHtml(c)}</span>
+        <button class="code-copy" onclick="${inlineCall("copyCode", c)}">Copy</button></div>`).join("")
+      : '<div class="empty-state"><h3>Your next sale starts here.</h3><p>Generate a purchase code after a sale and share it with your buyer.</p></div>';
+    document.getElementById("vendorDashboard").innerHTML = `
+      <section class="business-overview">
+        <div class="business-identity"><span class="eyebrow">Your business</span>
+          <h2>${escapeHtml(data.name)}</h2><p>${escapeHtml(data.category) || "Independent business"} · ${escapeHtml(data.location) || "Location not added"}</p>
+          <div class="badges"><span class="${status.className}">${status.label}</span>
+          <span class="${data.verified ? "status-paid" : "status-unpaid"}">${data.verified ? "Premium member" : "Free member"}</span></div>
+          <a class="text-link" href="v.html?id=${encodeURIComponent(docItem.id)}">View public profile <span aria-hidden="true"><svg class="arrow-icon" aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
         </div>
-
-        <h2 style="text-align:center;">Hi ${escapeHtml(data.name)} 👋</h2>
-
-        <div class="badges" style="justify-content:center;margin-top:10px;">
-          <span class="${status.className}">${status.label}</span>
-          ${verifiedBadge ? `<span class="verified-badge">${verifiedBadge}</span>` : ""}
-        </div>
-
-        <div style="margin-top:18px;">
-          <p>📞 ${escapeHtml(data.phone) || "No phone"}</p>
-          <p>🧾 ${escapeHtml(data.location) || "No location"}</p>
-          <p>⭐ Average Rating: ${Number(data.averageRating) || 0}/10</p>
-          <p>🔍 Searches This Week: ${Number(data.searchCount) || 0}</p>
-        </div>
-
-        <div class="vendor-actions">
-          <button onclick="generatePurchaseCode('${docItem.id}')">Generate Purchase Code</button>
-          ${!data.verified ? `<button onclick="payForVerification('${docItem.id}', '${user.email}')" class="btn-secondary">Get Verified (₦5,000)</button>` : ""}
-          <button onclick="viewReviews('${docItem.id}')" class="btn-secondary">View Reviews</button>
-          <button onclick="copyLink('${docItem.id}')" class="btn-secondary">Copy my profile link</button>
-          <button onclick="openEditProfile('${docItem.id}')" class="btn-secondary">Edit profile</button>
-        </div>
-
-        <div class="codes-wrap">
-          <div class="codes-head">
-            <span class="label">🔑 Your Purchase Codes</span>
-            <span class="count">${remainingCodes}/${maxCodes} left this month</span>
-          </div>
-          <div class="codes-list">
-            ${codesHtml}
-          </div>
-        </div>
-
+        <div class="score-summary"><div class="trust-ring" style="--p:${trustScore}"><div class="inner"><b>${trustScore}%</b><span>Trust score</span></div></div><p>Read alongside buyer reviews.</p></div>
+      </section>
+      <div class="metric-strip">
+        <div><span>Buyer rating</span><strong>${Number(data.averageRating) || 0}<small> / 10</small></strong></div>
+        <div><span>Profile searches</span><strong>${Number(data.searchCount) || 0}</strong></div>
+        <div><span>Codes remaining</span><strong>${remainingCodes}<small> / ${maxCodes} this month</small></strong></div>
       </div>
-    `;
-
+      <div class="workspace-columns">
+        <section class="card codes-panel"><div class="section-heading"><div><span class="eyebrow">After the sale</span><h2>Purchase codes</h2></div>
+          <button onclick="generatePurchaseCode('${docItem.id}')" ${remainingCodes === 0 ? "disabled" : ""}>Generate code</button></div>
+          <p>Give buyers a code to link their review to a purchase.</p><div class="codes-list">${codesHtml}</div></section>
+        <aside class="card account-panel"><span class="eyebrow">Manage your profile</span><h2>Business details</h2>
+          <dl class="detail-list"><div><dt>Phone</dt><dd>${escapeHtml(data.phone)}</dd></div><div><dt>Location</dt><dd>${escapeHtml(data.location)}</dd></div></dl>
+          <div class="vendor-actions"><button onclick="openEditProfile('${docItem.id}')" class="btn-secondary">Edit profile</button><button onclick="copyLink('${docItem.id}')" class="btn-secondary">Copy profile link</button><button onclick="viewReviews('${docItem.id}')" class="btn-secondary">Read reviews</button></div>
+          ${!data.verified ? `<div class="membership-note"><h3>More room for your business.</h3><p>Premium increases your monthly purchase-code allowance to 60.</p><button onclick="${inlineCall("payForVerification", docItem.id, user.email)}">Get Premium · ₦5,000</button></div>` : '<p class="membership-note">Your premium membership includes 60 purchase codes each month.</p>'}
+        </aside>
+      </div>`;
+    pageState("ready");
   } catch (err) {
+    if (request !== dashboardRequest || auth.currentUser?.uid !== user.uid) return;
     console.error("Vendor dashboard error:", err);
-    showToast("Failed to load vendor dashboard", "error");
+    pageState("error", "We couldn’t load your business. Your profile is still saved. Check your connection and try again.");
   }
 };
 
@@ -806,7 +782,7 @@ window.loadCustomerDashboard = async function () {
     const name = (user.email || "user").split("@")[0];
 
     const welcomeText = document.getElementById("welcomeText");
-    if (welcomeText) welcomeText.innerText = `Hi ${name} 👋`;
+    if (welcomeText) welcomeText.innerText = `Welcome back, ${name}.`;
 
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
@@ -819,6 +795,8 @@ window.loadCustomerDashboard = async function () {
       typeof data.weeklySearches === "number"
         ? data.weeklySearches
         : Number(data.weeklySearches) || 0;
+    const counter = document.getElementById("weeklySearches");
+    if (counter) counter.textContent = searches;
 
   } catch (err) {
     console.error("Customer dashboard error:", err);
@@ -835,30 +813,29 @@ window.trackVendorSearch = async function () {
 
   const userRef = doc(db, "users", user.uid);
   await setDoc(userRef, { weeklySearches: increment(1) }, { merge: true });
+  const counter = document.getElementById("weeklySearches");
+  if (counter) counter.textContent = (Number(counter.textContent) || 0) + 1;
 };
 
 // ===============================
 // PAGE LOADERS (auth-gated)
 // ===============================
-onAuthStateChanged(auth, (user) => {
-  if (user && window.location.pathname.includes("customer.html")) {
-    loadCustomerDashboard();
-    loadPremiumVendors();
-  }
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
-  if (window.location.pathname.includes("vendor.html")) {
-    await loadVendorDashboard();
-  }
-});
-
-onAuthStateChanged(auth, (user) => {
-  if (user && window.location.pathname.includes("admin.html")) {
-    loadAdminDashboard();
-  }
-});
+async function initializePage(user) {
+  if (!protectedPage) return;
+  if (!user) { ++dashboardRequest; pageState("loading"); location.replace("auth.html"); return; }
+  pageState("loading");
+  try {
+    const profile = await deadline(getDoc(doc(db, "users", user.uid)));
+    if (auth.currentUser?.uid !== user.uid) return;
+    const role = user.email === "ademikun2023@gmail.com" ? "admin" : profile.data()?.role;
+    if (!["customer", "vendor", "admin"].includes(role)) { pageState("error", "We couldn’t find your account profile. Try again or sign out to use another account."); return; }
+    if (!location.pathname.endsWith(`${role}.html`)) { location.replace(`${role}.html`); return; }
+    if (role === "vendor") await loadVendorDashboard();
+    if (role === "customer") { await loadCustomerDashboard(); pageState("ready"); await loadPremiumVendors(); }
+    if (role === "admin") { pageState("ready"); await loadAdminDashboard(); }
+  } catch (error) { pageState("error", "We couldn’t open your account. Check your connection and try again."); }
+}
+onAuthStateChanged(auth, initializePage, () => pageState("error", "We couldn’t check your sign-in. Please try again."));
 
 // ===============================
 // BAN VENDOR (direct)
@@ -902,11 +879,11 @@ window.loadAdminDashboard = async function () {
       const d = docItem.data();
       reportsHTML += `
         <div class="result-card">
-          <h3>🚨 Scam Report</h3>
+          <h3>Concern reported</h3>
           <p><b>Phone:</b> ${escapeHtml(d.phone) || "N/A"}</p>
           <p><b>Reason:</b> ${escapeHtml(d.reason) || "N/A"}</p>
           <p><b>By:</b> ${escapeHtml(d.reporterEmail) || "Unknown"}</p>
-          <button onclick="openReportModal('${docItem.id}','${escapeHtml(d.phone) || ""}','${(d.reason || "").replace(/'/g, "\\'").replace(/</g, "")}','${escapeHtml(d.reporterEmail) || ""}')">View Report</button>
+          <button onclick="${inlineCall("openReportModal", docItem.id, d.phone, d.reason, d.reporterEmail)}">View report</button>
         </div>
       `;
     });
@@ -926,12 +903,12 @@ window.loadAdminDashboard = async function () {
       vendorsHTML += `
         <div class="result-card">
           <h3>${escapeHtml(d.name) || "No name"}</h3>
-          <p>📞 ${escapeHtml(d.phone) || "No phone"}</p>
+          <p>Phone: ${escapeHtml(d.phone) || "No phone"}</p>
           <div class="badges" style="margin:8px 0;">
             <span class="${status.className}">${status.label}</span>
-            <span class="${d.banned ? "status-banned" : "status-trusted"}">${d.banned ? "🚫 Banned" : "🟢 Active"}</span>
+            <span class="${d.banned ? "status-banned" : "status-trusted"}">${d.banned ? "Restricted" : "Active"}</span>
           </div>
-          <button onclick="banVendor('${docItem.id}','${escapeHtml(d.createdBy) || ""}','${escapeHtml(d.phone) || ""}','${(d.name || "").replace(/'/g, "\\'").replace(/</g, "")}')">Ban Vendor</button>
+          <button onclick="${inlineCall("banVendor", docItem.id, d.createdBy, d.phone, d.name)}">Ban vendor</button>
         </div>
       `;
     });
@@ -981,9 +958,7 @@ window.banVendorFromReport = async function () {
     return;
   }
 
-  snap.forEach(async (docItem) => {
-    await updateDoc(doc(db, "vendors", docItem.id), { banned: true, verified: false });
-  });
+  await Promise.all(snap.docs.map(docItem => updateDoc(doc(db, "vendors", docItem.id), { banned: true, verified: false })));
 
   showToast("Vendor banned ✔", "success");
 
@@ -998,6 +973,7 @@ let currentVendorId = null;
 
 window.openReviewModal = function (vendorId) {
   currentVendorId = vendorId;
+  ["reviewRating", "purchaseCode", "reviewPros", "reviewCons"].forEach(id => { document.getElementById(id).value = ""; });
   document.getElementById("reviewModal").style.display = "flex";
 };
 
@@ -1017,6 +993,9 @@ window.submitReview = async function () {
   const cons = document.getElementById("reviewCons").value;
   const purchaseCode = document.getElementById("purchaseCode").value.trim();
 
+  if (!Number.isInteger(rating) || rating < 1 || rating > 10) { showToast("Choose a whole-number rating from 1 to 10", "warning"); return; }
+  const currentVendor = await getDoc(doc(db, "vendors", currentVendorId));
+  if (!currentVendor.exists() || currentVendor.data().banned) { showToast("This vendor cannot receive reviews", "warning"); return; }
   let verifiedPurchase = false;
 
   // one review per device
@@ -1036,11 +1015,10 @@ window.submitReview = async function () {
     const vendorRef = doc(db, "vendors", currentVendorId);
     const vendorSnap = await getDoc(vendorRef);
     const vendorData = vendorSnap.data();
-    const codes = vendorData.purchaseCodes || [];
+    const codes = vendorData?.purchaseCodes || [];
 
-    if (codes.includes(purchaseCode)) {
-      verifiedPurchase = true;
-    }
+    if (!codes.includes(purchaseCode)) { showToast("That purchase code is not valid for this vendor", "warning"); return; }
+    verifiedPurchase = true;
   }
 
   await addDoc(
@@ -1100,7 +1078,7 @@ window.viewReviews = async function (vendorId) {
       const div = document.createElement("div");
       div.className = "result-card";
       div.innerHTML = `
-        <h3>⭐ ${Number(d.rating) || 0}/10 ${d.verifiedPurchase ? " ✅ Verified Purchase" : ""}</h3>
+        <h3>⭐ ${Number(d.rating) || 0}/10 ${d.verifiedPurchase ? " Purchase-code verified" : ""}</h3>
         <p><b>Pros:</b><br>${escapeHtml(d.pros) || "None"}</p>
         <br>
         <p><b>Cons:</b><br>${escapeHtml(d.cons) || "None"}</p>
@@ -1139,6 +1117,7 @@ window.generatePurchaseCode = async function (vendorId) {
     }
 
     const vendorData = vendorSnap.data();
+    if (!auth.currentUser || vendorData.createdBy !== auth.currentUser.email || vendorData.banned) { showToast("You can only create codes for your own active business", "error"); return; }
 
     const maxCodes = vendorData.verified === true ? 60 : 20;
 
@@ -1165,7 +1144,7 @@ window.generatePurchaseCode = async function (vendorId) {
       return;
     }
 
-    const code = "VP-" + Math.floor(10000 + Math.random() * 90000);
+    const code = "VP-" + crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
 
     let purchaseCodes = vendorData.purchaseCodes || [];
     purchaseCodes.push(code);
@@ -1180,7 +1159,7 @@ window.generatePurchaseCode = async function (vendorId) {
     showToast(`New code: ${code} (saved to your list)`, "success");
 
     // refresh so the new code shows in the list
-    setTimeout(() => { loadVendorDashboard(); }, 900);
+    await loadVendorDashboard();
 
   } catch (err) {
     console.error(err);
@@ -1191,7 +1170,9 @@ window.generatePurchaseCode = async function (vendorId) {
 // ===============================
 // PREMIUM VENDORS (customer)
 // ===============================
+let premiumRequest = 0;
 window.loadPremiumVendors = async function () {
+  const request = ++premiumRequest;
 
   const container = document.getElementById("premiumVendors");
   if (!container) return;
@@ -1203,8 +1184,8 @@ window.loadPremiumVendors = async function () {
 
   try {
 
-    const snap = await getDocs(collection(db, "vendors"));
-
+    const snap = await deadline(getDocs(collection(db, "vendors")));
+    if (request !== premiumRequest) return;
     container.innerHTML = "";
 
     let found = false;
@@ -1226,12 +1207,12 @@ window.loadPremiumVendors = async function () {
         const div = document.createElement("div");
         div.className = "premium-vendor-card";
         div.innerHTML = `
-          <h3>⭐ ${escapeHtml(d.name)}</h3>
-          <p>📂 ${escapeHtml(d.category) || "Others"}</p>
-          <p>📞 ${escapeHtml(d.phone) || "No phone"}</p>
-          <p>🧾 ${escapeHtml(d.location) || "No location"}</p>
-          <p>📊 Trust Score: ${Number(trustScore) || 0}%</p>
-          <div class="premium-badge">✅ Premium Vendor</div>
+          <h3>${escapeHtml(d.name)}</h3>
+          <p>Category: ${escapeHtml(d.category) || "Others"}</p>
+          <p>Phone: ${escapeHtml(d.phone) || "No phone"}</p>
+          <p>Location: ${escapeHtml(d.location) || "No location"}</p>
+          <p>Trust score: ${Number(trustScore) || 0}%</p>
+          <div class="premium-badge">Premium vendor</div><a class="text-link" href="v.html?id=${encodeURIComponent(docItem.id)}">View profile <svg class="arrow-icon" aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         `;
         container.appendChild(div);
       }
@@ -1247,7 +1228,8 @@ window.loadPremiumVendors = async function () {
 
   } catch (err) {
     console.error(err);
-    showToast("Failed to load premium vendors", "error");
+    if (request !== premiumRequest) return;
+    container.innerHTML = '<div class="empty-state"><p>Couldn’t load vendors. Check your connection.</p><button class="btn-secondary" onclick="loadPremiumVendors()">Try again</button></div>';
   }
 };
 
@@ -1279,6 +1261,7 @@ window.openEditProfile = async function (id) {
   if (!snap.exists()) { showToast("Vendor not found", "error"); return; }
 
   const d = snap.data();
+  if (!auth.currentUser || d.createdBy !== auth.currentUser.email) { showToast("This is not your business profile", "error"); return; }
 
   // 30-day gate (soft client guard — back it with security rules for real enforcement)
   const last = d.lastProfileEdit || 0;
@@ -1344,9 +1327,31 @@ window.updateVendor = async function () {
     await updateDoc(doc(db, "vendors", editingVendorId), updates);
     showToast("Profile updated ✔", "success");
     closeEditProfile();
-    setTimeout(loadVendorDashboard, 600);
+    await loadVendorDashboard();
   } catch (err) {
     console.error(err);
     showToast("Failed to update profile", "error");
   }
 };
+// Keep each action single-flight, and always recover the controls after an error.
+for (const name of ["login", "signup", "addVendor", "searchVendor", "reportScam", "submitReview", "generatePurchaseCode", "openEditProfile", "updateVendor", "banVendor", "banVendorFromReport", "deleteVendor", "logout"]) {
+  const action = window[name];
+  let pending = false;
+  window[name] = async (...args) => {
+    if (pending) return;
+    pending = true;
+    const buttons = [...document.querySelectorAll(`button[onclick^="${name}("]`)];
+    const previous = buttons.map(b => b.disabled);
+    buttons.forEach(b => { b.disabled = true; b.setAttribute("aria-busy", "true"); });
+    try { return await action(...args); }
+    catch (error) {
+      console.error(`${name} failed`, error);
+      if (name === "searchVendor") document.getElementById("result").innerHTML = '<p role="alert">Search couldn’t finish. Please try again.</p>';
+      showToast("Couldn’t complete that action. Check your connection and try again.", "error");
+    } finally {
+      pending = false;
+      buttons.forEach((b, i) => { b.disabled = previous[i]; b.removeAttribute("aria-busy"); });
+    }
+  };
+}
+window.dispatchEvent(new Event("verifyplug:ready"));
